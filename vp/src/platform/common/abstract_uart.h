@@ -68,10 +68,10 @@ private:
 	struct pollfd fds[NFDS];
 
 	std::queue<uint8_t> tx_fifo;
-	sem_t txfull;
 	std::queue<uint8_t> rx_fifo;
-	sem_t rxempty;
 
+	sem_t *rxempty_p;
+	sem_t *txfull_p;
 	vp::map::LocalRouter router = {"UART"};
 };
 

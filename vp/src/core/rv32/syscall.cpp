@@ -1,5 +1,7 @@
 #include "syscall.h"
 
+#include <compat.h>
+
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/time.h>

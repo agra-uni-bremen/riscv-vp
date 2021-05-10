@@ -1,6 +1,10 @@
+#include <compat.h>
 #include "ethernet.h"
 
 #include <netinet/ether.h>
+#include <linux/if_packet.h>
+#include <linux/if_tun.h>
+
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -9,12 +13,10 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
-#include <linux/if_packet.h>
 //#include <netpacket/packet.h>
 #include <net/if.h>
 //#include <linux/if_ether.h>
 #include <fcntl.h>
-#include <linux/if_tun.h>
 #include <sys/ioctl.h>
 
 #include <ifaddrs.h>
@@ -56,44 +58,44 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 		cout << "type           : " << ntohs(eh->ether_type) << endl;
 	}
 
-	readbuf += sizeof(struct ethhdr);
+	readbuf += sizeof(struct ether_header);
 	switch (ntohs(eh->ether_type)) {
 		case ETH_P_IP: {
 			cout << "IP ";
 			struct in_addr source;
 			struct in_addr dest;
-			struct iphdr *ip = (struct iphdr *)readbuf;
+			struct ip *l_ip = (struct ip *)readbuf;
 			memset(&source, 0, sizeof(source));
-			source.s_addr = ip->saddr;
+			source.s_addr = l_ip->ip_src.s_addr;
 			memset(&dest, 0, sizeof(dest));
-			dest.s_addr = ip->daddr;
+			dest.s_addr = l_ip->ip_dst.s_addr;
 			if (verbose) {
 				cout << endl;
-				cout << "\t|-Version               : " << ip->version << endl;
-				cout << "\t|-Internet Header Length: " << ip->ihl << " DWORDS or " << ip->ihl * 4 << " Bytes" << endl;
-				cout << "\t|-Type Of Service       : " << (unsigned int)ip->tos << endl;
-				cout << "\t|-Total Length          : " << ntohs(ip->tot_len) << " Bytes" << endl;
-				cout << "\t|-Identification        : " << ntohs(ip->id) << endl;
-				cout << "\t|-Time To Live          : " << (unsigned int)ip->ttl << endl;
-				cout << "\t|-Protocol              : " << (unsigned int)ip->protocol << endl;
-				cout << "\t|-Header Checksum       : " << ntohs(ip->check) << endl;
+				cout << "\t|-Version               : " << l_ip->ip_v << endl;
+				cout << "\t|-Internet Header Length: " << l_ip->ip_hl << " DWORDS or " << l_ip->ip_hl * 4 << " Bytes" << endl;
+				cout << "\t|-Type Of Service       : " << (unsigned int)l_ip->ip_tos << endl;
+				cout << "\t|-Total Length          : " << ntohs(l_ip->ip_len) << " Bytes" << endl;
+				cout << "\t|-Identification        : " << ntohs(l_ip->ip_id) << endl;
+				cout << "\t|-Time To Live          : " << (unsigned int)l_ip->ip_ttl << endl;
+				cout << "\t|-Protocol              : " << (unsigned int)l_ip->ip_p << endl;
+				cout << "\t|-Header Checksum       : " << ntohs(l_ip->ip_sum) << endl;
 				cout << "\t|-Source IP             : " << inet_ntoa(source) << endl;
 				cout << "\t|-Destination IP        : " << inet_ntoa(dest) << endl;
 			}
-			readbuf += ip->ihl * 4;
-			switch (ip->protocol) {
+			readbuf += l_ip->ip_hl * 4;
+			switch (l_ip->ip_p) {
 				case IPPROTO_UDP: {
 					cout << "UDP ";
 					struct udphdr *udp = (struct udphdr *)readbuf;
 					if (verbose) {
 						cout << endl;
-						cout << "\t|-Source port     : " << ntohs(udp->source) << endl;
-						cout << "\t|-Destination port: " << ntohs(udp->dest) << endl;
-						cout << "\t|-Length          : " << ntohs(udp->len) << endl;
-						cout << "\t|-Checksum        : " << ntohs(udp->check) << endl;
+						cout << "\t|-Source port     : " << ntohs(udp->uh_sport) << endl;
+						cout << "\t|-Destination port: " << ntohs(udp->uh_dport) << endl;
+						cout << "\t|-Length          : " << ntohs(udp->uh_ulen) << endl;
+						cout << "\t|-Checksum        : " << ntohs(udp->uh_sum) << endl;
 					}
 					readbuf += sizeof(udphdr);
-					switch (ntohs(udp->dest)) {
+						switch (ntohs(udp->uh_dport)) {
 						case 67:
 						case 68:
 							cout << "DHCP ";
@@ -223,16 +225,18 @@ void EthernetDevice::init_network(std::string clonedev) {
 	}
 
 	/* Get the MAC address of the interface to send on */
-	struct ifreq ifopts;
-	memset(&ifopts, 0, sizeof(struct ifreq));
-	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ - 1);
-	if (ioctl(sockfd, SIOCGIFHWADDR, &ifopts) < 0) {
-		perror("SIOCGIFHWADDR");
-		assert(sockfd >= 0);
+	struct ifaddrs *ifad, *ifadptr;
+	
+	if (getifaddrs(&ifad) == 0) {
+		for (ifadptr = ifad; ifadptr != NULL; ifadptr = (ifadptr)->ifa_next) {
+			if (!strcmp((ifadptr)->ifa_name, IF_NAME) && (((ifadptr)->ifa_addr)->sa_family == AF_PACKET)) {
+				struct sockaddr_ll *saddl = (struct sockaddr_ll *)(ifadptr)->ifa_addr;
+				memcpy(VIRTUAL_MAC_ADDRESS, (caddr_t)((saddl)->sll_addr), 6);
+				break;
+			}
+		}
+		freeifaddrs(ifad);
 	}
-	// Save own MAC in register
-	memcpy(VIRTUAL_MAC_ADDRESS, ifopts.ifr_hwaddr.sa_data, 6);
-
 	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 }
 
@@ -292,14 +296,14 @@ bool EthernetDevice::isPacketForUs(uint8_t *packet, ssize_t) {
 		// is IP
 		return true;
 
-		iphdr *ip = reinterpret_cast<iphdr *>(packet + sizeof(ether_header));
-		if (ip->protocol != IPPROTO_UDP) {  // not UDP
+		ip *l_ip = reinterpret_cast<ip *>(packet + sizeof(ether_header));
+		if (l_ip->ip_p != IPPROTO_UDP) {  // not UDP
 			// cout << " dumped non-UDP ";
 			// FIXME change to true if you want to use TCP or ICMP
 			return false;
 		}
 
-		udphdr *udp = reinterpret_cast<udphdr *>(packet + sizeof(ether_header) + sizeof(iphdr));
+		udphdr *udp = reinterpret_cast<udphdr *>(packet + sizeof(ether_header) + sizeof(ip));
 		if (ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68) {  // not DHCP
 			// cout << " dumped non-DHCP ";
 			return false;

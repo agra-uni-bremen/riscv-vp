@@ -69,9 +69,15 @@ int sys_fstat(SyscallHandler *sys, int fd, rv64_stat *s_addr) {
 		p->st_size = x.st_size;
 		p->st_blksize = x.st_blksize;
 		p->st_blocks = x.st_blocks;
+#ifdef __APPLE__
+		_copy_timespec(&p->st_atim, &x.st_atimespec);
+		_copy_timespec(&p->st_mtim, &x.st_mtimespec);
+		_copy_timespec(&p->st_ctim, &x.st_ctimespec);
+#else
 		_copy_timespec(&p->st_atim, &x.st_atim);
 		_copy_timespec(&p->st_mtim, &x.st_mtim);
 		_copy_timespec(&p->st_ctim, &x.st_ctim);
+#endif
 	}
 	return ans;
 }

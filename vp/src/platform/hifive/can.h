@@ -4,6 +4,7 @@
 #include "spi.h"
 
 #include <linux/can.h>
+
 #include <net/if.h>
 
 #include <functional>

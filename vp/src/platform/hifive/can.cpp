@@ -1,9 +1,11 @@
 #include "can.h"
+
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <endian.h>
+
 #include <unistd.h>
 
-#include <endian.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -31,7 +33,6 @@ CAN::CAN() {
 
 	addr.can_family = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
-
 	if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 		close(s);
 		perror("Could not bind to can family");

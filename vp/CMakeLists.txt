@@ -31,6 +31,14 @@ endif()
 find_package( SoftFloat REQUIRED )
 include_directories( ${SoftFloat_INCLUDE_DIRS} )
 
+if(APPLE)
+include_directories( "${CMAKE_SOURCE_DIR}/../compat/macos")
+endif()
+
+if(LINUX)
+include_directories( "${CMAKE_SOURCE_DIR}/../compat/linux")
+endif()
+
 subdirs(src)
 
 enable_testing()
@@ -53,3 +61,4 @@ set_tests_properties(gdb integration sw PROPERTIES ENVIRONMENT
 	PATH=$ENV{PATH}:${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 set_tests_properties(libgdb PROPERTIES ENVIRONMENT
 	RISCV_VP_BASE=${CMAKE_CURRENT_SOURCE_DIR}/..)
+	

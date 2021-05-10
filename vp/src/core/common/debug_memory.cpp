@@ -6,8 +6,9 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <arpa/inet.h>
 #include <byteswap.h>
+
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <sys/socket.h>
@@ -46,7 +47,11 @@ std::string DebugMemoryInterface::read_memory(uint64_t start, unsigned nbytes) {
 	std::vector<uint8_t> buf(nbytes);  // NOTE: every element is zero-initialized by default
 
 	unsigned nbytes_read = _do_dbg_transaction(tlm::TLM_READ_COMMAND, start, buf.data(), buf.size());
-	assert(nbytes_read == nbytes && "not all bytes read");
+	if(nbytes_read < nbytes) {
+		std::cerr << "DebugMemoryInterface::read_memory: not all bytes read."
+					"Mostly this is caused by reading unmapped memory location."
+					<< std::endl;
+	}
 
 	std::stringstream stream;
 	stream << std::setfill('0') << std::hex;

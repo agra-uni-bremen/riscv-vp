@@ -42,7 +42,7 @@ struct OLED
 			margin(QPoint(margin, margin)), scale(scale),
 			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
 	{
-		state = ss1106::getSharedState();
+		state = reinterpret_cast<ss1106::State*>(ss1106::getSharedState());
 		state->changed = 1;
 	};
 };
