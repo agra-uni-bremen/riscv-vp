@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "${default}",
+            "includePath": [
+                "${workspaceFolder}",
+                "vp/src",
+                "vp/src/core/rv32",
+                "vp/src/core/common",
+                "vp/src/platform/common",
+                "D:/40-CoFluent/systemc/systemc/src"
+            ]
+        }
+    ],
+    "version": 4
+}

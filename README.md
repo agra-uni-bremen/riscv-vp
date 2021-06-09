@@ -124,4 +124,4 @@ literal Ctrl-a control character to the guest.
 
 #### Acknowledgements:
 
-This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project SATiSFy under contract no. 16KIS0821K and within the project VerSys under contract no. 01IW19001, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.
+This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project SATiSFy under contract no. 16KIS0821K and within the project VerSys under contract no. 01IW19001 and within the project Scale4Edge under contract no. 16ME0127, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.

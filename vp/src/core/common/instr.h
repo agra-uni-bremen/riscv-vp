@@ -228,6 +228,8 @@ enum Parts {
 	// reserved opcodes for custom instructions
 	OP_CUST1 = 0b0101011,
 	OP_CUST0 = 0b0001011,
+	OP_CUST2 = 0b1011011,
+	OP_CUST3 = 0b1111011
 };
 
 // each instruction is mapped by the decoder to the following mapping
@@ -421,6 +423,12 @@ enum Mapping {
 	WFI,
 	SFENCE_VMA,
 
+	// Custom instructions
+	CUSTOM0,
+	CUSTOM1,
+	CUSTOM2,
+	CUSTOM3,
+
 	NUMBER_OF_INSTRUCTIONS
 };
 
@@ -434,6 +442,7 @@ enum class Type {
 	U,
 	J,
 	R4,
+	C
 };
 
 extern std::array<const char*, NUMBER_OF_INSTRUCTIONS> mappingStr;
@@ -625,6 +634,7 @@ struct Instruction {
 	}
 
    private:
+   	friend class RoccInstruction;
 	// use signed variable to have correct sign extension in immediates
 	int32_t instr;
 };

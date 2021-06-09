@@ -341,6 +341,16 @@ constexpr uint32_t FCVT_D_LU_ENCODING = 0b11010010001100000000000001010011;
 constexpr uint32_t FMV_D_X_MASK = 0b11111111111100000111000001111111;
 constexpr uint32_t FMV_D_X_ENCODING = 0b11110010000000000000000001010011;
 
+// Custom Extension
+constexpr uint32_t CUSTOM0_MASK = 0b00000000000000000000000001111111;
+constexpr uint32_t CUSTOM0_ENCODING = 0b00000000000000000000000000001011;
+constexpr uint32_t CUSTOM1_MASK = 0b00000000000000000000000001111111;
+constexpr uint32_t CUSTOM1_ENCODING = 0b00000000000000000000000000101011;
+constexpr uint32_t CUSTOM2_MASK = 0b00000000000000000000000001111111;
+constexpr uint32_t CUSTOM2_ENCODING = 0b00000000000000000000000001011011;
+constexpr uint32_t CUSTOM3_MASK = 0b00000000000000000000000001111111;
+constexpr uint32_t CUSTOM3_ENCODING = 0b00000000000000000000000001111011;
+
 #define MATCH_AND_RETURN_INSTR2(instr, result)                     \
 	if (unlikely((data() & (instr##_MASK)) != (instr##_ENCODING))) \
 		return UNDEF;                                              \
@@ -605,6 +615,12 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "MRET",
     "WFI",
     "SFENCE_VMA",
+
+	// custom instructions
+	"CUSTOM0",
+	"CUSTOM1",
+	"CUSTOM2",
+	"CUSTOM3"
 };
 
 Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
@@ -762,7 +778,11 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FNMSUB_D:
 		case FNMADD_D:
 			return Type::R4;
-
+		case CUSTOM0:
+		case CUSTOM1:
+		case CUSTOM2:
+		case CUSTOM3:
+			return Type::C;
 		default:
 			return Type::UNKNOWN;
 	}
@@ -1891,6 +1911,18 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F2_FNMADD_D:
 					MATCH_AND_RETURN_INSTR(FNMADD_D);
 			}
+			break;
+		case OP_CUST0:
+			MATCH_AND_RETURN_INSTR(CUSTOM0);
+			break;
+		case OP_CUST1:
+			MATCH_AND_RETURN_INSTR(CUSTOM1);
+			break;
+		case OP_CUST2:
+			MATCH_AND_RETURN_INSTR(CUSTOM2);
+			break;
+		case OP_CUST3:
+			MATCH_AND_RETURN_INSTR(CUSTOM3);
 			break;
 	}
 

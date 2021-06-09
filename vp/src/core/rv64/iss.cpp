@@ -89,6 +89,7 @@ void RegFile::show() {
 }
 
 ISS::ISS(uint64_t hart_id) : systemc_name("Core-" + std::to_string(hart_id)) {
+	tsock.register_b_transport(this, &ISS::transport);
 	csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
@@ -174,6 +175,11 @@ void ISS::exec_step() {
 				break;
 			case Opcode::Type::J:
 				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
+				break;
+			case Opcode::Type::C:
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
 			default:;
 		}
@@ -427,7 +433,10 @@ void ISS::exec_step() {
 			regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> regs.shamt_w(instr.rs2()));
 			break;
 
-		case Opcode::FENCE:
+		case Opcode::FENCE: {
+		// TODO: check only IO fence, ignore MEM fence
+			sc_core::wait(io_fence_event);
+		} break;
 		case Opcode::FENCE_I: {
 			// not using out of order execution/caches so can be ignored
 		} break;
@@ -1281,6 +1290,13 @@ void ISS::exec_step() {
 			return_from_trap_handler(MachineMode);
 			break;
 
+			// Custom
+		case Opcode::CUSTOM0:
+		case Opcode::CUSTOM1:
+		case Opcode::CUSTOM2:
+		case Opcode::CUSTOM3:
+			execute_rocc(instr);
+			break;
 		default:
 			throw std::runtime_error("unknown opcode");
 	}
@@ -1682,6 +1698,12 @@ void ISS::trigger_software_interrupt(bool status) {
 		std::cout << "[vp::iss] trigger software interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.msip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+void ISS::io_fence_done() {
+	if (trace)
+		std::cout << "[vp::iss] fence finished, " << sc_core::sc_time_stamp() << std::endl;
+	io_fence_event.notify();
 }
 
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {

@@ -5,6 +5,7 @@ add_library(rv64
 		syscall.cpp
         ${HEADERS})
 
+target_compile_definitions(rv64 PUBLIC -DRV64)
 target_link_libraries(rv64 core-common ${SoftFloat_LIBRARIES})
 
 
