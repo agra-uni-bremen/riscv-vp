@@ -9,6 +9,8 @@
 
 #include "../../env/basic/vp-display/framebuffer.h"
 
+using namespace frame;	// bug-fix RD (on CentOS7, this only works with this line)
+
 extern Framebuffer* volatile const framebuffer;
 
 inline Color fromRGB(uint8_t r, uint8_t g, uint8_t b) {

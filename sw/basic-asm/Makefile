@@ -1,5 +1,5 @@
 all : sum.o
-	riscv32-unknown-elf-ld sum.o -o main
+	riscv32-unknown-elf-ld sum.o -o main -melf32lriscv
 	
 sim: all
 	riscv-vp main
