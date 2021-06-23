@@ -8,7 +8,7 @@
 
 #include <sys/types.h>
 
-/* character → control key */
+/* character -> control key */
 #define CTRL(c) ((c) & 0x1f)
 
 #define KEY_ESC  CTRL('a')  /* Ctrl-a (character to enter command mode) */
@@ -62,7 +62,7 @@ void UART::handle_cmd(uint8_t cmd) {
 		exit(EXIT_SUCCESS);
 		break;
 	default:
-		return; /* unknown command → ignore */
+		return; /* unknown command -> ignore */
 	}
 }
 

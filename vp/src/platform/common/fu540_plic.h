@@ -41,7 +41,7 @@ private:
 
 	std::vector<RegisterRange*> register_ranges;
 
-	/* hart_id (0..4) → hart_config */
+	/* hart_id (0..4) -> hart_config */
 	typedef std::map<unsigned int, HartConfig*> hartmap;
 	hartmap enabled_irqs;
 	hartmap hart_context;
