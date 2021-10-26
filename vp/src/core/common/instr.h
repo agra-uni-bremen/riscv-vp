@@ -441,8 +441,7 @@ enum class Type {
 	B,
 	U,
 	J,
-	R4,
-	C
+	R4
 };
 
 extern std::array<const char*, NUMBER_OF_INSTRUCTIONS> mappingStr;

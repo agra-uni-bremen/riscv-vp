@@ -60,9 +60,9 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core0(0);
+	ISS core0("", 0);
 	MMU mmu0(core0);
-	ISS core1(1);
+	ISS core1("", 1);
 	MMU mmu1(core1);
 
 	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0, mmu0);

@@ -728,6 +728,10 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FCVT_D_L:
 		case FCVT_D_LU:
 		case FMV_D_X:
+		case CUSTOM0:
+		case CUSTOM1:
+		case CUSTOM2:
+		case CUSTOM3:
 			return Type::R;
 		case JALR:
 		case LB:
@@ -778,11 +782,6 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FNMSUB_D:
 		case FNMADD_D:
 			return Type::R4;
-		case CUSTOM0:
-		case CUSTOM1:
-		case CUSTOM2:
-		case CUSTOM3:
-			return Type::C;
 		default:
 			return Type::UNKNOWN;
 	}

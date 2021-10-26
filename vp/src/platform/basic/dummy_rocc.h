@@ -20,7 +20,8 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DummyRocc);
 
-	DummyRocc(sc_core::sc_module_name name, io_fence_if& core) : peq("dummy_rocc_peq"), core(core) {
+	DummyRocc(sc_core::sc_module_name name, io_fence_if& core)
+	    : sc_core::sc_module(name), peq("dummy_rocc_peq"), core(core) {
 		memset(acc, 0, sizeof(acc));
 		tsocks[0].register_b_transport(this, &DummyRocc::transport_core);
 		// TODO: memory has no controller (sc_thread), no concurrent memory access from both CORE & ROCC
@@ -31,7 +32,8 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 	void transport_core(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
 		assert(addr >= ROCC_START_ADDR && addr <= ROCC_END_ADDR);
-		peq.notify(trans, delay);
+		sc_core::wait(delay);
+		peq.notify(trans);
 	}
 
 	void transport_mem(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
@@ -41,20 +43,21 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 	void run() {
 		while (true) {
 			sc_core::wait(peq.get_event());
-			tlm::tlm_generic_payload* trans = nullptr;
-			while (trans = peq.get_next_transaction()) {
+			tlm::tlm_generic_payload* trans = peq.get_next_transaction();
+			while (trans) {
 				auto req = (RoccCmd*)trans->get_data_ptr();
 				auto instr = req->instr;
 				if (instr.rs2() >= num_acc)
 					raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 				reg_t prev_acc = acc[instr.rs2()];
+
 				switch (instr.funct7()) {
 					case 0:  // acc <- xs1
-						assert(instr.xs1() && instr.rs2());
+						assert(instr.xs1() && instr.xs2());
 						acc[instr.rs2()] = req->rs1;
 						break;
-					case 1:  // xd <- acc (the only real work is the return statement below)
+					case 1:  // xd <- acc (the only real work is the isocks[0] transport below)
 						assert(instr.xd());
 						break;
 					case 2: {  // acc[rs2] <- Mem[xs1]
@@ -62,7 +65,7 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 						tlm::tlm_generic_payload mem_trans;
 						mem_trans.set_command(tlm::TLM_READ_COMMAND);
 						mem_trans.set_address(req->rs1);
-						mem_trans.set_data_ptr(&acc[instr.rs2()]);
+						mem_trans.set_data_ptr((unsigned char*)&acc[instr.rs2()]);
 						mem_trans.set_data_length(sizeof(reg_t));
 						mem_trans.set_response_status(tlm::TLM_OK_RESPONSE);
 						auto zero_delay = sc_core::SC_ZERO_TIME;
@@ -96,6 +99,9 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 							isocks[0]->b_transport(resp_trans, zero_delay);
 						}
 				}
+				// TODO: profile different op costs
+				wait(10, sc_core::SC_NS);
+				trans = peq.get_next_transaction();
 			}
 			// peq flushed, notify the core to continue if fenced on io
 			core.io_fence_done();

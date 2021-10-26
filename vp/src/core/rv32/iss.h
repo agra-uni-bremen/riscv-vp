@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
@@ -154,8 +155,12 @@ struct PendingInterrupts {
 	uint32_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, 
-	public debug_target_if, public io_fence_if {
+struct ISS : public sc_core::sc_module, 
+			 public external_interrupt_target, 
+			 public clint_interrupt_target,
+			 public iss_syscall_if, 
+			 public debug_target_if, 
+			 public io_fence_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -196,7 +201,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	static constexpr int32_t REG_MIN = INT32_MIN;
     static constexpr unsigned xlen = 32;
 
-	ISS(uint32_t hart_id, bool use_E_base_isa = false);
+	ISS(sc_core::sc_module_name, uint32_t hart_id, bool use_E_base_isa = false);
 
 	void exec_step();
 
@@ -318,6 +323,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	inline void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
 		assert(addr >= ROCC_START_ADDR && addr <= ROCC_END_ADDR);
+		sc_core::wait(delay);
 		auto resp = (RoccResp*)trans.get_data_ptr();
 		assert(resp->rd < RegFile::NUM_REGS);
 		regs[resp->rd] = (int32_t)resp->data;
@@ -370,7 +376,7 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name((core.systemc_name + "-runner").c_str())), core(core) {
 		thread_name = "run" + std::to_string(core.get_hart_id());
 		SC_NAMED_THREAD(run, thread_name.c_str());
 	}

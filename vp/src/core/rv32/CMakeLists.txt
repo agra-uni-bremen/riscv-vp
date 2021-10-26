@@ -5,7 +5,7 @@ add_library(rv32
 		syscall.cpp
         ${HEADERS})
 
-target_compile_definitions(rv32 PUBLIC -DRV32)
+target_compile_definitions(rv32 PUBLIC -DRV32B)
 target_link_libraries(rv32 core-common ${SoftFloat_LIBRARIES})
 
 
