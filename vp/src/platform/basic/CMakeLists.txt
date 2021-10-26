@@ -11,7 +11,7 @@ add_executable(riscv-vp
         main.cpp)
 
 if (TRUE)
-        target_compile_definitions(riscv-vp PUBLIC -DRV32)
+        target_compile_definitions(riscv-vp PUBLIC -DRV32B)
         target_link_libraries(riscv-vp rv32 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
 else()
         target_compile_definitions(riscv-vp PUBLIC -DRV64)

@@ -111,7 +111,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0, opt.use_E_base_isa);
+	ISS core("", 0, opt.use_E_base_isa);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
@@ -220,6 +220,7 @@ int sc_main(int argc, char **argv) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
+		// TODO: memory leakage
 		new DirectCoreRunner(core);
 	}
 

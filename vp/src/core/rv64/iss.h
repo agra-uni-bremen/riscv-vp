@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
@@ -139,8 +140,12 @@ struct PendingInterrupts {
 	uint64_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public debug_target_if, public iss_syscall_if,
-	public io_fence_if {
+struct ISS : public sc_core::sc_module, 
+			 public external_interrupt_target, 
+			 public clint_interrupt_target,
+			 public debug_target_if, 
+			 public iss_syscall_if, 
+			 public io_fence_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -182,7 +187,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	static constexpr int64_t REG32_MIN = INT32_MIN;
 	static constexpr unsigned xlen = 64;
 
-	ISS(uint64_t hart_id);
+	ISS(sc_core::sc_module_name, uint64_t hart_id);
 
 	Architecture get_architecture(void) override {
 		return RV64;
@@ -377,7 +382,7 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name((core.systemc_name + "-runner").c_str())), core(core) {
 		thread_name = "run" + std::to_string(core.get_hart_id());
 		SC_NAMED_THREAD(run, thread_name.c_str());
 	}

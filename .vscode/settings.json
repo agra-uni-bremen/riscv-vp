@@ -83,7 +83,18 @@
         "common.h": "c",
         "simple_initiator_socket.h": "c",
         "bus_lock_if.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "*.tcc": "cpp",
+        "clocale": "cpp",
+        "cwctype": "cpp",
+        "bit": "cpp",
+        "bitset": "cpp",
+        "complex": "cpp",
+        "memory_resource": "cpp",
+        "optional": "cpp",
+        "cfenv": "cpp",
+        "cinttypes": "cpp",
+        "variant": "cpp"
     },
     "cmake.configureOnOpen": false,
     "files.watcherExclude": {

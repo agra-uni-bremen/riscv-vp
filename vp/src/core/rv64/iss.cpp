@@ -88,7 +88,8 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint64_t hart_id) : systemc_name("Core-" + std::to_string(hart_id)) {
+ISS::ISS(sc_core::sc_module_name, uint64_t hart_id) :
+	systemc_name("Core-" + std::to_string(hart_id)) {
 	tsock.register_b_transport(this, &ISS::transport);
 	csrs.mhartid.reg = hart_id;
 
@@ -175,11 +176,6 @@ void ISS::exec_step() {
 				break;
 			case Opcode::Type::J:
 				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
-				break;
-			case Opcode::Type::C:
-				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
-				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
-				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
 			default:;
 		}

@@ -1,16 +1,15 @@
 #pragma once
 
 #include <string>
-
 #include "instr.h"
 
 #define ROCC_START_ADDR 0x10000000
 #define ROCC_END_ADDR 0x1000ffff
 
-#ifdef RV32
-typedef uint32_t reg_t;
+#ifdef RV32B
+using reg_t = uint32_t;
 #else
-typedef uint64_t reg_t;
+using reg_t = uint64_t;
 #endif
 
 struct RoccInstruction : public Instruction {
