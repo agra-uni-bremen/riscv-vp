@@ -20,8 +20,8 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DummyRocc);
 
-	DummyRocc(sc_core::sc_module_name name, io_fence_if& core) : 
-		sc_core::sc_module(name), peq("dummy_rocc_peq"), core(core) {
+	DummyRocc(sc_core::sc_module_name name, io_fence_if& core)
+	    : sc_core::sc_module(name), peq("dummy_rocc_peq"), core(core) {
 		memset(acc, 0, sizeof(acc));
 		tsocks[0].register_b_transport(this, &DummyRocc::transport_core);
 		// TODO: memory has no controller (sc_thread), no concurrent memory access from both CORE & ROCC
@@ -51,13 +51,12 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 					raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 				reg_t prev_acc = acc[instr.rs2()];
-				
 				switch (instr.funct7()) {
 					case 0:  // acc <- xs1
 						assert(instr.xs1() && instr.xs2());
 						acc[instr.rs2()] = req->rs1;
 						break;
-					case 1:  // xd <- acc (the only real work is the return statement below)
+					case 1:  // xd <- acc (the only real work is the isocks[0] transport below)
 						assert(instr.xd());
 						break;
 					case 2: {  // acc[rs2] <- Mem[xs1]

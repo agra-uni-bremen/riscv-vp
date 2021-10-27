@@ -323,6 +323,7 @@ struct ISS : public sc_core::sc_module,
 	inline void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
 		assert(addr >= ROCC_START_ADDR && addr <= ROCC_END_ADDR);
+		sc_core::wait(delay);
 		auto resp = (RoccResp*)trans.get_data_ptr();
 		assert(resp->rd < RegFile::NUM_REGS);
 		regs[resp->rd] = (int32_t)resp->data;
