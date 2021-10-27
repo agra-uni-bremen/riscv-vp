@@ -364,7 +364,7 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::FENCE: {
-		// TODO: check only IO fence, ignore MEM fence
+			// TODO: check only IO fence, ignore MEM fence
 			sc_core::wait(io_fence_event);
 		} break;
 		case Opcode::FENCE_I: {

@@ -83,21 +83,23 @@ class DummyRocc : public rocc_if, public sc_core::sc_module {
 					default:
 						raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-						// in all cases, xd <- previous value of acc[rs2]
-						if (instr.xd()) {
-							RoccResp resp;
-							resp.rd = instr.rd();
-							resp.data = prev_acc;
-							tlm::tlm_generic_payload resp_trans;
-							resp_trans.set_command(tlm::TLM_IGNORE_COMMAND);
-							resp_trans.set_address(ROCC_START_ADDR);
-							resp_trans.set_data_ptr((unsigned char*)&resp_trans);
-							resp_trans.set_data_length(sizeof(resp));
-							resp_trans.set_response_status(tlm::TLM_OK_RESPONSE);
-							auto zero_delay = sc_core::SC_ZERO_TIME;
-							isocks[0]->b_transport(resp_trans, zero_delay);
-						}
 				}
+
+				// in all cases, xd <- previous value of acc[rs2]
+				if (instr.xd()) {
+					RoccResp resp;
+					resp.rd = instr.rd();
+					resp.data = prev_acc;
+					tlm::tlm_generic_payload resp_trans;
+					resp_trans.set_command(tlm::TLM_IGNORE_COMMAND);
+					resp_trans.set_address(ROCC_START_ADDR);
+					resp_trans.set_data_ptr((unsigned char*)&resp);
+					resp_trans.set_data_length(sizeof(resp));
+					resp_trans.set_response_status(tlm::TLM_OK_RESPONSE);
+					auto zero_delay = sc_core::SC_ZERO_TIME;
+					isocks[0]->b_transport(resp_trans, zero_delay);
+				}
+
 				// TODO: profile different op costs
 				wait(10, sc_core::SC_NS);
 				trans = peq.get_next_transaction();
