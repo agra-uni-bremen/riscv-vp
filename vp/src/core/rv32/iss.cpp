@@ -80,7 +80,9 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : systemc_name("Core-" + std::to_string(hart_id)) {
+ISS::ISS(sc_core::sc_module_name, uint32_t hart_id, bool use_E_base_isa) : 
+	systemc_name("Core-" + std::to_string(hart_id)) {
+	tsock.register_b_transport(this, &ISS::transport);
 	csrs.mhartid.reg = hart_id;
 	if (use_E_base_isa)
 		csrs.misa.select_E_base_isa();
@@ -361,7 +363,10 @@ void ISS::exec_step() {
 			}
 			break;
 
-		case Opcode::FENCE:
+		case Opcode::FENCE: {
+			// TODO: check only IO fence, ignore MEM fence
+			sc_core::wait(io_fence_event);
+		} break;
 		case Opcode::FENCE_I: {
 			// not using out of order execution so can be ignored
 		} break;
@@ -1161,6 +1166,14 @@ void ISS::exec_step() {
         case Opcode::FMV_D_X:
             RAISE_ILLEGAL_INSTRUCTION();
             break;
+		
+			// Custom
+		case Opcode::CUSTOM0:
+		case Opcode::CUSTOM1:
+		case Opcode::CUSTOM2:
+		case Opcode::CUSTOM3:
+			execute_rocc(instr);
+			break;
 
         default:
             throw std::runtime_error("unknown opcode");
@@ -1617,6 +1630,12 @@ void ISS::trigger_software_interrupt(bool status) {
 		std::cout << "[vp::iss] trigger software interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.msip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+void ISS::io_fence_done() {
+	if (trace)
+		std::cout << "[vp::iss] fence finished, " << sc_core::sc_time_stamp() << std::endl;
+	io_fence_event.notify();
 }
 
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {

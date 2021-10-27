@@ -6,6 +6,8 @@
 #include "core/common/irq_if.h"
 #include "core/common/trap.h"
 #include "core/common/debug.h"
+#include "core/common/io_fence_if.h"
+#include "core/common/rocc_if.h"
 #include "csr.h"
 #include "fp.h"
 #include "mem_if.h"
@@ -25,6 +27,7 @@
 #include <vector>
 
 #include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
@@ -152,7 +155,12 @@ struct PendingInterrupts {
 	uint32_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, public debug_target_if {
+struct ISS : public sc_core::sc_module, 
+			 public external_interrupt_target, 
+			 public clint_interrupt_target,
+			 public iss_syscall_if, 
+			 public debug_target_if, 
+			 public io_fence_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -178,6 +186,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool debug_mode = false;
 
 	sc_core::sc_event wfi_event;
+	sc_core::sc_event io_fence_event;
 
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
@@ -185,10 +194,14 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
+	// Rocc sockets
+	tlm_utils::simple_initiator_socket<ISS> isock;
+	tlm_utils::simple_target_socket<ISS> tsock;
+
 	static constexpr int32_t REG_MIN = INT32_MIN;
     static constexpr unsigned xlen = 32;
 
-	ISS(uint32_t hart_id, bool use_E_base_isa = false);
+	ISS(sc_core::sc_module_name, uint32_t hart_id, bool use_E_base_isa = false);
 
 	void exec_step();
 
@@ -203,6 +216,12 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void trigger_timer_interrupt(bool status) override;
 
 	void trigger_software_interrupt(bool status) override;
+
+	void io_fence_done() override;
+
+	bool traced() override {
+		return trace;
+	}
 
 
 	void sys_exit() override;
@@ -285,6 +304,31 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 		regs[instr.rd()] = data;
 	}
 
+	inline void execute_rocc(Instruction &instr) {
+		tlm::tlm_generic_payload trans;
+		tlm::tlm_command cmd = tlm::TLM_IGNORE_COMMAND;
+		trans.set_command(cmd);
+		trans.set_address(ROCC_START_ADDR);
+		RoccCmd req;
+		RoccInstruction rocc_instr(instr.data());
+		req.instr = rocc_instr;
+		req.rs1 = regs[rocc_instr.rs1()];
+		req.rs2 = regs[rocc_instr.rs2()];
+		trans.set_data_ptr((unsigned char*)&req);
+		trans.set_data_length(sizeof(req));
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		isock->b_transport(trans, instr_cycles[rocc_instr.opcode()]);
+	}
+
+	inline void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
+		auto addr = trans.get_address();
+		assert(addr >= ROCC_START_ADDR && addr <= ROCC_END_ADDR);
+		sc_core::wait(delay);
+		auto resp = (RoccResp*)trans.get_data_ptr();
+		assert(resp->rd < RegFile::NUM_REGS);
+		regs[resp->rd] = (int32_t)resp->data;
+	}
+
 	inline bool m_mode() {
 		return prv == MachineMode;
 	}
@@ -332,7 +376,7 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name((core.systemc_name + "-runner").c_str())), core(core) {
 		thread_name = "run" + std::to_string(core.get_hart_id());
 		SC_NAMED_THREAD(run, thread_name.c_str());
 	}

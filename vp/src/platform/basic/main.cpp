@@ -18,6 +18,7 @@
 #include "sensor2.h"
 #include "syscall.h"
 #include "terminal.h"
+#include "dummy_rocc.h"
 #include "util/options.h"
 #include "platform/common/options.h"
 
@@ -49,6 +50,8 @@ public:
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
+	addr_t rocc_start_addr = ROCC_START_ADDR;
+	addr_t rocc_end_addr = ROCC_END_ADDR;	
 	addr_t term_start_addr = 0x20000000;
 	addr_t term_end_addr = term_start_addr + 16;
 	addr_t ethernet_start_addr = 0x30000000;
@@ -108,11 +111,11 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0, opt.use_E_base_isa);
+	ISS core("", 0, opt.use_E_base_isa);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<3, 12> bus("SimpleBus");
+	SimpleBus<4, 13> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
@@ -126,6 +129,7 @@ int sc_main(int argc, char **argv) {
 	EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+	DummyRocc rocc("DummyRocc", core);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -166,10 +170,19 @@ int sc_main(int argc, char **argv) {
 	bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
 	bus.ports[10] = new PortMapping(opt.display_start_addr, opt.display_end_addr);
 	bus.ports[11] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus.ports[12] = new PortMapping(opt.rocc_start_addr, opt.rocc_end_addr);
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
-	dbg_if.isock.bind(bus.tsocks[2]);
+	dbg_if.isock.bind(bus.tsocks[3]);
+
+	core.isock.bind(rocc.tsocks[0]);
+	rocc.isocks[0].bind(core.tsock);
+
+	PeripheralWriteConnector rocc_connector("DummyRocc-Connector");  // to respect ISS bus locking
+	rocc_connector.isock.bind(bus.tsocks[2]);
+	rocc.isocks[1].bind(rocc_connector.tsock);
+	rocc_connector.bus_lock = bus_lock;
 
 	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");  // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
@@ -188,6 +201,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[9].bind(ethernet.tsock);
 	bus.isocks[10].bind(display.tsock);
 	bus.isocks[11].bind(sys.tsock);
+	bus.isocks[12].bind(rocc.tsocks[1]);
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
@@ -206,6 +220,7 @@ int sc_main(int argc, char **argv) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
+		// TODO: memory leakage
 		new DirectCoreRunner(core);
 	}
 
