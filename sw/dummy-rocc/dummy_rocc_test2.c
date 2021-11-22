@@ -16,6 +16,7 @@ int main() {
   // read it back into z (funct=1) to verify it
   // xd <- acc
   asm volatile (".insn r 0x0b, 5, 1, %0, x0, x2" : "=r"(z) :);
+  asm volatile ("fence iorw, iorw" : : : "memory");
   assert(z == x);
 
   // accumulate 456 into it (funct=3)
@@ -24,12 +25,14 @@ int main() {
 
   // verify it
   asm volatile (".insn r 0x0b, 5, 1, %0, x0, x2" : "=r"(z) :);
+  asm volatile ("fence iorw, iorw" : : : "memory");
   assert(z == x+y);
 
   // do it all again, but initialize acc2 via memory this time (funct=2)
   asm volatile (".insn r 0x0b, 3, 2, x0, %0, x2" : : "r"(&x));
   asm volatile (".insn r 0x0b, 3, 3, x0, %0, x2" : : "r"(y));
   asm volatile (".insn r 0x0b, 5, 1, %0, x0, x2" : "=r"(z) :);
+  asm volatile ("fence iorw, iorw" : : : "memory");
   assert(z == x+y);
 
   printf("success!\n");

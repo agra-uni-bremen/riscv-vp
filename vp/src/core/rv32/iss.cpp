@@ -365,7 +365,8 @@ void ISS::exec_step() {
 
 		case Opcode::FENCE: {
 			// TODO: check only IO fence, ignore MEM fence
-			sc_core::wait(io_fence_event);
+			if (rocc && rocc->is_busy())
+				sc_core::wait(io_fence_event);
 		} break;
 		case Opcode::FENCE_I: {
 			// not using out of order execution so can be ignored
@@ -1435,12 +1436,13 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 }
 
 void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint,
-               uint32_t sp) {
+               uint32_t sp, rocc_if* rocc) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
 	regs[RegFile::sp] = sp;
 	pc = entrypoint;
+	this->rocc = rocc;
 }
 
 void ISS::sys_exit() {

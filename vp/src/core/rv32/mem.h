@@ -23,7 +23,7 @@ struct InstrMemoryProxy : public instr_memory_if {
 };
 
 template<typename T>
-struct GenericMemoryProxy {
+struct GenericMemoryProxy : public sc_core::sc_module {
 	std::vector<MemoryDMI> dmi_ranges;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
@@ -31,7 +31,7 @@ struct GenericMemoryProxy {
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_time access_delay = clock_cycle * 4;
 
-	GenericMemoryProxy(tlm_utils::tlm_quantumkeeper &qt) : quantum_keeper(qt) {}
+	GenericMemoryProxy(sc_core::sc_module_name, tlm_utils::tlm_quantumkeeper &qt) : quantum_keeper(qt) {}
 
 	T load(uint64_t addr) {
 		bus_lock->wait_until_unlocked();
@@ -79,8 +79,6 @@ struct GenericMemoryProxy {
 		quantum_keeper.set(local_delay);
 
 		if (trans.is_response_error()) {
-			if (iss.trace)
-				std::cout << "WARNING: memory transaction failed -> raise trap" << std::endl;
 			if (cmd == tlm::TLM_READ_COMMAND)
 				raise_trap(EXC_LOAD_PAGE_FAULT, addr);
 			else if (cmd == tlm::TLM_WRITE_COMMAND)

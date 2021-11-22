@@ -69,5 +69,8 @@ struct TLD {
 struct RoccMemResp {};
 
 struct rocc_if {
+	// whether the rocc has ongoing instructions
+	virtual bool is_busy() const = 0;
+	virtual bool is_ready() const { return true; }
 	virtual ~rocc_if() {}
 };

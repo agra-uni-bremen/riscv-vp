@@ -13,6 +13,7 @@
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
+#include "allocator.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -30,6 +31,8 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
+
+using std::shared_ptr;
 
 namespace rv32 {
 
@@ -197,6 +200,8 @@ struct ISS : public sc_core::sc_module,
 	// Rocc sockets
 	tlm_utils::simple_initiator_socket<ISS> isock;
 	tlm_utils::simple_target_socket<ISS> tsock;
+	TransAllocator<Transaction<RoccCmd>> trans_allocator;
+	rocc_if* rocc;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
     static constexpr unsigned xlen = 32;
@@ -207,7 +212,8 @@ struct ISS : public sc_core::sc_module,
 
 	uint64_t _compute_and_get_current_cycles();
 
-	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint, uint32_t sp);
+	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint, 
+		uint32_t sp, rocc_if*);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 
@@ -305,19 +311,20 @@ struct ISS : public sc_core::sc_module,
 	}
 
 	inline void execute_rocc(Instruction &instr) {
-		tlm::tlm_generic_payload trans;
+		auto trans = trans_allocator.allocate();
+		trans->acquire();
 		tlm::tlm_command cmd = tlm::TLM_IGNORE_COMMAND;
-		trans.set_command(cmd);
-		trans.set_address(ROCC_START_ADDR);
-		RoccCmd req;
+		trans->set_command(cmd);
+		trans->set_address(ROCC_START_ADDR);
+		auto req = trans->get_data_ptr();
 		RoccInstruction rocc_instr(instr.data());
-		req.instr = rocc_instr;
-		req.rs1 = regs[rocc_instr.rs1()];
-		req.rs2 = regs[rocc_instr.rs2()];
-		trans.set_data_ptr((unsigned char*)&req);
-		trans.set_data_length(sizeof(req));
-		trans.set_response_status(tlm::TLM_OK_RESPONSE);
-		isock->b_transport(trans, instr_cycles[rocc_instr.opcode()]);
+		req->instr = rocc_instr;
+		req->rs1 = regs[rocc_instr.rs1()];
+		req->rs2 = regs[rocc_instr.rs2()];
+		trans->set_data_ptr((unsigned char*)req);
+		trans->set_data_length(sizeof(RoccCmd));
+		trans->set_response_status(tlm::TLM_OK_RESPONSE);
+		isock->b_transport(*trans, instr_cycles[rocc_instr.opcode()]);
 	}
 
 	inline void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
@@ -327,6 +334,7 @@ struct ISS : public sc_core::sc_module,
 		auto resp = (RoccResp*)trans.get_data_ptr();
 		assert(resp->rd < RegFile::NUM_REGS);
 		regs[resp->rd] = (int32_t)resp->data;
+		trans.release();
 	}
 
 	inline bool m_mode() {

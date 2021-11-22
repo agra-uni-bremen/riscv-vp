@@ -21,6 +21,7 @@
 #include "dummy_rocc.h"
 #include "util/options.h"
 #include "platform/common/options.h"
+#include "allocator.h"
 
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
@@ -130,7 +131,7 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 	DummyRocc rocc("DummyRocc", core);
-	GenericMemoryProxy<reg_t> rocc_mem_if(rocc.quantum_keeper);
+	GenericMemoryProxy<reg_t> rocc_mem_if("", rocc.quantum_keeper);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -153,7 +154,7 @@ int sc_main(int argc, char **argv) {
 		entry_point = opt.entry_point.value;
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
-	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(opt.mem_end_addr));
+	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(opt.mem_end_addr), &rocc);
 	rocc.init(&rocc_mem_if);
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
@@ -183,10 +184,6 @@ int sc_main(int argc, char **argv) {
 	core.isock.bind(rocc.tsocks[0]);
 	rocc.isocks[0].bind(core.tsock);
 	rocc_mem_if.isock.bind(bus.tsocks[2]);
-	// PeripheralWriteConnector rocc_connector("DummyRocc-Connector");  // to respect ISS bus locking
-	// rocc_connector.isock.bind(bus.tsocks[2]);
-	// rocc.isocks[1].bind(rocc_connector.tsock);
-	// rocc_connector.bus_lock = bus_lock;
 
 	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");  // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
@@ -224,7 +221,6 @@ int sc_main(int argc, char **argv) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
-		// TODO: memory leakage
 		new DirectCoreRunner(core);
 	}
 
