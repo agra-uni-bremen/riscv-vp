@@ -94,7 +94,8 @@
         "optional": "cpp",
         "cfenv": "cpp",
         "cinttypes": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "xxatomic": "c"
     },
     "cmake.configureOnOpen": false,
     "files.watcherExclude": {

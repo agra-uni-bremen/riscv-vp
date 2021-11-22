@@ -130,12 +130,14 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 	DummyRocc rocc("DummyRocc", core);
+	GenericMemoryProxy<reg_t> rocc_mem_if(rocc.quantum_keeper);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
+	rocc_mem_if.bus_lock = bus_lock;
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
@@ -143,6 +145,7 @@ int sc_main(int argc, char **argv) {
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
 		iss_mem_if.dmi_ranges.emplace_back(dmi);
+		rocc_mem_if.dmi_ranges.emplace_back(dmi);
 	}
 
 	uint64_t entry_point = loader.get_entrypoint();
@@ -151,6 +154,7 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
 	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(opt.mem_end_addr));
+	rocc.init(&rocc_mem_if);
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
@@ -178,11 +182,11 @@ int sc_main(int argc, char **argv) {
 
 	core.isock.bind(rocc.tsocks[0]);
 	rocc.isocks[0].bind(core.tsock);
-
-	PeripheralWriteConnector rocc_connector("DummyRocc-Connector");  // to respect ISS bus locking
-	rocc_connector.isock.bind(bus.tsocks[2]);
-	rocc.isocks[1].bind(rocc_connector.tsock);
-	rocc_connector.bus_lock = bus_lock;
+	rocc_mem_if.isock.bind(bus.tsocks[2]);
+	// PeripheralWriteConnector rocc_connector("DummyRocc-Connector");  // to respect ISS bus locking
+	// rocc_connector.isock.bind(bus.tsocks[2]);
+	// rocc.isocks[1].bind(rocc_connector.tsock);
+	// rocc_connector.bus_lock = bus_lock;
 
 	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");  // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);

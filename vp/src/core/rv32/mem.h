@@ -22,6 +22,76 @@ struct InstrMemoryProxy : public instr_memory_if {
 	}
 };
 
+template<typename T>
+struct GenericMemoryProxy {
+	std::vector<MemoryDMI> dmi_ranges;
+	std::shared_ptr<bus_lock_if> bus_lock;
+	tlm_utils::tlm_quantumkeeper &quantum_keeper;
+	tlm_utils::simple_initiator_socket<GenericMemoryProxy<T>> isock;
+	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+	sc_core::sc_time access_delay = clock_cycle * 4;
+
+	GenericMemoryProxy(tlm_utils::tlm_quantumkeeper &qt) : quantum_keeper(qt) {}
+
+	T load(uint64_t addr) {
+		bus_lock->wait_until_unlocked();
+
+		for (auto &e : dmi_ranges) {
+			if (e.contains(addr)) {
+				quantum_keeper.inc(access_delay);
+				return e.load<T>(addr);
+			}
+		}
+
+		T ans;
+		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
+		return ans;
+	}
+
+	void store(uint64_t addr, T data) {
+		bus_lock->wait_until_unlocked();
+
+		bool done = false;
+		for (auto &e : dmi_ranges) {
+			quantum_keeper.inc(access_delay);
+			e.store(addr, data);
+			done  = true;
+		}
+
+		if (!done) {
+			_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&data, sizeof(T));
+		}
+	}
+
+	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
+		tlm::tlm_generic_payload trans;
+		trans.set_command(cmd);
+		trans.set_address(addr);
+		trans.set_data_ptr(data);
+		trans.set_data_length(num_bytes);
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
+		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
+
+		isock->b_transport(trans, local_delay);
+
+		assert(local_delay >= quantum_keeper.get_local_time());
+		quantum_keeper.set(local_delay);
+
+		if (trans.is_response_error()) {
+			if (iss.trace)
+				std::cout << "WARNING: memory transaction failed -> raise trap" << std::endl;
+			if (cmd == tlm::TLM_READ_COMMAND)
+				raise_trap(EXC_LOAD_PAGE_FAULT, addr);
+			else if (cmd == tlm::TLM_WRITE_COMMAND)
+				raise_trap(EXC_STORE_AMO_PAGE_FAULT, addr);
+			else
+				throw std::runtime_error("TLM command must be read or write");
+		}
+	}
+
+};
+
 struct CombinedMemoryInterface : public sc_core::sc_module,
                                  public instr_memory_if,
                                  public data_memory_if,
