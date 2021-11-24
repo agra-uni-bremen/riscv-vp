@@ -19,6 +19,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "dummy_rocc.h"
+#include "str_transformer.h"
 #include "util/options.h"
 #include "platform/common/options.h"
 #include "allocator.h"
@@ -130,7 +131,8 @@ int sc_main(int argc, char **argv) {
 	EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-	DummyRocc rocc("DummyRocc", core);
+	// DummyRocc rocc("DummyRocc", core);
+	StrTransformer rocc("StrTransformer", core);
 	GenericMemoryProxy<reg_t> rocc_mem_if("", rocc.quantum_keeper);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -146,7 +148,7 @@ int sc_main(int argc, char **argv) {
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
 		iss_mem_if.dmi_ranges.emplace_back(dmi);
-		rocc_mem_if.dmi_ranges.emplace_back(dmi);
+		// rocc_mem_if.dmi_ranges.emplace_back(dmi);
 	}
 
 	uint64_t entry_point = loader.get_entrypoint();
