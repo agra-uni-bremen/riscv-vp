@@ -7,6 +7,9 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <iostream>
+
+using namespace std;
 
 static int buffer_index = 0;
 static const int num_buffers = 2;
@@ -19,7 +22,7 @@ static const int lower_func = 0;
 static const int upper_func = 1;
 
 int get_buffer_index() {
-  buffer_index = (++buffer_index) % num_buffers;
+  buffer_index = (buffer_index++) % num_buffers;
   return buffer_index;
 }
 
@@ -45,16 +48,16 @@ void do_transform(char* buf, int len, int func) {
   asm volatile(".insn r 0x0b, 1, 1, x0, x0, %0" : : "r"(buffer_idx));
 
   // 6. fence on mem write
-  asm volatile("fence iorw, iorw" : : : "memory");
+  // asm volatile("fence iorw, iorw" : : : "memory");
 }
 
 // change chars in buf to lower case in place
 void to_lower_case(char* buf, int len) {
-  do_transform(buf, len, upper_func);
+  do_transform(buf, len, lower_func);
 }
 
 void to_upper_case(char* buf, int len) {
-  do_transform(buf, len, lower_func);
+  do_transform(buf, len, upper_func);
 }
 
 int main() {
@@ -63,16 +66,16 @@ int main() {
   char mixed[] = "risc-V";
 
   to_upper_case(lower, sizeof(lower));
-  assert(lower == "HELLO");
+  assert(string(lower) == "HELLO");
 
   to_lower_case(upper, sizeof(upper));
-  assert(upper == "world");
+  assert(string(upper) == "world");
 
   to_lower_case(mixed, sizeof(mixed));
-  assert(mixed == "risc-v");
+  assert(string(mixed) == "risc-v");
 
   to_upper_case(mixed, sizeof(mixed));
-  assert(mixed == "RISC-V");
+  assert(string(mixed) == "RISC-V");
 
 	printf("success!\n");
 }

@@ -104,7 +104,7 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 
 	void run() {
 		for (int i = 0; i < num_buffers; i++) {
-			sc_core::sc_spawn(sc_bind(&transform, this, i);
+			sc_core::sc_spawn(sc_bind(&StrTransformer::transform, this, i));
 		}
 
 		while (true) {
@@ -141,7 +141,7 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 						break;
 					}
 					case 1: {  // run
-						assert(instr.xs1() && !instr.xs2() && !instr.xd());
+						assert(!instr.xs1() && instr.xs2() && !instr.xd());
 						auto& buffer_index = req->rs2;
 						assert(buffer_index < num_buffers);
 						assert(phases[buffer_index] <= TransPhase::CONFIG);
@@ -161,21 +161,25 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 
    private:
 
-    void to_lower(char* buffer) {
+    void to_lower(char* buffer, reg_t len) {
 		char* c = buffer;
 		static int inc = 'a' - 'A';
-		while (*c != '\0') {
+		while (len > 0) {
 			if (*c >= 'A' && *c <= 'Z')
 				*c += inc;
+			c++;
+			len--;
 		}
 	}
 
-	void to_upper(char* buffer) {
+	void to_upper(char* buffer, reg_t len) {
 		char* c = buffer;
 		static int inc = 'a' - 'A';
-		while (*c != '\0') {
+		while (len > 0) {
 			if (*c >= 'a' && *c <= 'z')
 				*c -= inc;
+			c++;
+			len--;
 		}
 	}
 
@@ -223,13 +227,13 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 			switch (buffer_func[buffer_index]) {
 				case TransOp::TO_LOWWER: {
 					load_data(buffer_index);
-					to_lower(buffer[buffer_index]);
+					to_lower(buffer[buffer_index], str_size[buffer_index]);
 					store_data(buffer_index);
 					break;
 				}
 				case TransOp::TO_UPPER: {
 					load_data(buffer_index);
-					to_upper(buffer[buffer_index]);
+					to_upper(buffer[buffer_index], str_size[buffer_index]);
 					store_data(buffer_index);
 					break;
 				}
