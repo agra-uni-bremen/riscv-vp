@@ -12,6 +12,7 @@
 #pragma once
 
 #include <assert.h>
+
 #include "barrier.h"
 
 #define NUM_BUFFERS 2  // number of buffers
@@ -26,9 +27,11 @@
 #define LOWER_FUNC 0
 #define UPPER_FUNC 1
 
-#define config_reg(reg, val) asm volatile(".insn r 0x0b, 3, 0, x0, %0, %1" : : "r"(val), "r"(reg))
+#define config_reg(reg, val) \
+	asm volatile(".insn r 0x0b, 3, 0, x0, %0, %1" : : "r"(val), "r"(reg))
 
-#define kick_off(pe_idx) asm volatile(".insn r 0x0b, 1, 1, x0, x0, %0" : : "r"(pe_idx))
+#define kick_off(pe_idx) \
+	asm volatile(".insn r 0x0b, 1, 1, x0, x0, %0" : : "r"(pe_idx))
 
 static int buffer_index = 0;
 
@@ -38,11 +41,12 @@ int get_buffer_index() {
 }
 
 void do_transform(char* src, char* dst, size_t len, int func) {
-    if (len == 0) return;
-    assert(src != nullptr);
-    assert(dst != nullptr);
+	if (len == 0)
+		return;
+	assert(src != nullptr);
+	assert(dst != nullptr);
 	assert(func == LOWER_FUNC || func == UPPER_FUNC);
-	
+
 	int buffer_idx = get_buffer_index();
 	// 1. configure source address
 	int src_reg_idx = buffer_idx * REG_IDX_FACTOR + REG_OFFSET_SRC;
@@ -58,7 +62,7 @@ void do_transform(char* src, char* dst, size_t len, int func) {
 
 	// 4. configure buffer function
 	int func_reg_idx = buffer_idx * REG_IDX_FACTOR + REG_OFFSET_FUNC;
-	config_reg(func_reg_idx, len);
+	config_reg(func_reg_idx, func);
 
 	// 5. Kick off the buffer function
 	kick_off(buffer_idx);
