@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <libgdb/parser2.h>
 #include <libgdb/response.h>
 
@@ -73,6 +74,8 @@ void GDBServer::create_sock(uint16_t port) {
 		throw std::system_error(errno, std::generic_category());
 
 	reuse = 1;
+	if (setsockopt(sockfd, SOL_TCP, TCP_NODELAY, &reuse, sizeof(reuse)) == -1)
+		goto err;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) == -1)
 		goto err;
 
