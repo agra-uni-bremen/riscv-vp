@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 project(GTKWAVE_RISCV_INSTR_FILTER CXX)
 
 SET(INSTR ${CMAKE_CURRENT_SOURCE_DIR}/../../core/common)
