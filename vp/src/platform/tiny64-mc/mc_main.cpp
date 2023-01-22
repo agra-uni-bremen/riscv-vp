@@ -65,8 +65,8 @@ int sc_main(int argc, char **argv) {
 	ISS core1(1);
 	MMU mmu1(core1);
 
-	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0, mmu0);
-	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1, mmu1);
+	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0, &mmu0);
+	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1, &mmu1);
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());

@@ -32,14 +32,29 @@ enum {
 	NUM_CORES = 5,
 };
 
+/* if not defined externally fall back to TARGET_RV64 */
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#define TARGET_RV64
+#endif
+
+#if defined(TARGET_RV32)
+using namespace rv32;
+#define MEM_SIZE_MB	1024	// MB ram
+
+#elif defined(TARGET_RV64)
 using namespace rv64;
+#define MEM_SIZE_MB	2048	// MB ram
+
+#endif /* TARGET_RVxx */
+
+
 namespace po = boost::program_options;
 
 struct LinuxOptions : public Options {
 public:
 	typedef unsigned int addr_t;
 
-	addr_t mem_size = 1024u * 1024u * 2048u;  // 2048 MB ram
+	addr_t mem_size = 1024u * 1024u * (unsigned int)(MEM_SIZE_MB);
 	addr_t mem_start_addr = 0x80000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
@@ -88,7 +103,7 @@ class Core {
 	InstrMemoryProxy imemif;
 
 	Core(unsigned int id, MemoryDMI dmi)
-	    : iss(id), mmu(iss), memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, mmu), imemif(dmi, iss) {
+	    : iss(id), mmu(iss), memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu), imemif(dmi, iss) {
 		return;
 	}
 
@@ -197,6 +212,12 @@ int sc_main(int argc, char **argv) {
 		// emulate RISC-V core boot loader
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
+
+#ifdef TARGET_RV32
+		// configure supported instructions
+		cores[i]->iss.csrs.misa.fields.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
+			cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
+#endif /* TARGET_RV32 */
 	}
 
 	// OpenSBI boots all harts except hart 0 by default.

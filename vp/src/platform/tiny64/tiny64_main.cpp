@@ -64,7 +64,7 @@ int sc_main(int argc, char **argv) {
 
 	ISS core(0);
 	MMU mmu(core);
-	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, mmu);
+	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<2, 3> bus("SimpleBus");
