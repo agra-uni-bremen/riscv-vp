@@ -40,13 +40,15 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
 	std::vector<MemoryDMI> dmi_ranges;
 
-	MMU &mmu;
+	MMU *mmu;
 
-	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU &mmu)
+	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU *mmu = nullptr)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {}
 
 	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {
-		return mmu.translate_virtual_to_physical_addr(vaddr, type);
+		if (mmu == nullptr)
+			return vaddr;
+		return mmu->translate_virtual_to_physical_addr(vaddr, type);
 	}
 
 	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
@@ -136,7 +138,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	}
 
 	void flush_tlb() override {
-		mmu.flush_tlb();
+		mmu->flush_tlb();
 	}
 
 	uint32_t load_instr(uint64_t addr) override {
