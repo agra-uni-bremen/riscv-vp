@@ -30,15 +30,29 @@ struct MicroRV32UART : public sc_core::sc_module {
 		auto addr = trans.get_address();
 		auto cmd = trans.get_command();
 		// auto len = trans.get_data_length();
-		auto ptr = trans.get_data_ptr();
+		auto ptr = trans.get_data_ptr(); // unsigned char
+
+		std::cout << "[UART] addr: 0x" << std::hex << addr
+          << ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ")
+          << ", data_length: " << trans.get_data_length()
+          << ", data: ";
+		  for (unsigned i = 0; i < trans.get_data_length(); ++i) {
+			std::cout << "0x" << std::hex << (int)((unsigned char)ptr[i]) << " ";
+			}
+			std::cout << std::endl;
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
+			std::cout << "Write buf: " << buf <<  ", hex: 0x" << std::hex << (static_cast<int>(static_cast<unsigned char>(buf))) << std::endl;
 			if (addr == 0) {
 				buf = *ptr;
+				std::cout << "cmd Write ptr: 0x" << std::hex << ptr << std::endl;
+				std::cout << "cmd Write *ptr: 0x" << std::hex << *ptr << std::endl;
+				std::cout << "cmd Write buf: " << buf << std::endl;
 			} else if (addr == 4) {
-				std::cout << buf;
+				std::cout << buf << std::endl;;
 			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
+			std::cout << "rxFifo size: " << rxFifo.size() << std::endl;
 			if (addr == 0) {
 				// ignore
 			} else if (addr == 4) {
@@ -46,6 +60,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 			} else if (addr == 8) {
 				if (rxFifo.size() > 0) {
 					*((uint32_t *)ptr) = rxFifo.front();
+					printf("read RX: %2X\n", rxFifo.front());
 					// printf("\n[TLM] UART, transport, read RX: %2X\n", rxFifo.front());
 					// std::cout << std::endl << "[TLM] uart transport RX: " << std::hex <<
 					// static_cast<uint8_t>(rxFifo.front()) << std::endl;
@@ -73,6 +88,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 			unsigned char newRXChar = (rand() %('z'-'A')) + 'A';
 			if (rxFifo.size() <= rxFifoDepth) {
 				rxFifo.push(newRXChar);
+				std::cout << "newRXChar: " << newRXChar << std::endl;
 				// printf("\n[TLM] UART, run: %X\n", newRXChar);
 				// std::cout << std::endl << "[TLM] uart run: " << std::hex << (newRXChar & 0xff) << std::endl;
 			}

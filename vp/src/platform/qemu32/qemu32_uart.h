@@ -39,20 +39,6 @@
 #define UART_MCR_LOOP 0x10	/* Enable loopback test mode */
 #define UART_MSR_ANY_DELTA 0x0F	/* Any of the delta bits! */
 
-uint8_t DLL = 0;  // Divisor Latch LSB (when DLAB=1)
-uint8_t DLM = 0;  // Divisor Latch MSB (when DLAB=1)
-uint8_t THR_reg = 0;
-uint8_t FCR_reg = 0;
-uint8_t IER_reg = 0;
-uint8_t ISR_reg = 0;
-uint8_t LCR_reg = 0;
-uint8_t MCR_reg = 0;
-uint8_t LSR_reg = UART_LSR_THRE;  // Initially THR is empty
-uint8_t MSR_reg = 0;
-uint8_t SPR_reg = 0;
-uint8_t RHR_reg = 0;
-uint8_t ISR_NO_INT = 0x01; // Interrupt identification register
-
 /* Interrupt trigger levels. The byte-counts are for 16550A - in newer UARTs the byte-count for each ITL is higher. */
 
 #define UART_FCR_ITL_1      0x00 /* 1 byte ITL */
@@ -63,14 +49,13 @@ uint8_t ISR_NO_INT = 0x01; // Interrupt identification register
 struct Qemu32UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<Qemu32UART> tsock;
 
-	sc_core::sc_event run_event;
+	sc_core::sc_event run_event;  
 
 	// bool trigger_send = false;  // Flag to trigger transmission
 	interrupt_gateway *plic = 0;
 	uint32_t irq_number = 0;
 	int poll_msl;
 	int thr_ipending;
-	int timeout_ipending;           // timeout interrupt pending state
 	uint8_t recv_fifo_itl;          // Interrupt trigger level for recv_fifo
 
 	// tx
@@ -79,6 +64,20 @@ struct Qemu32UART : public sc_core::sc_module {
 	// rx
 	std::queue<unsigned char> rxFifo;
 	uint8_t rxFifoDepth = 16;
+	
+	uint8_t DLL = 0;  // Divisor Latch LSB (when DLAB=1)
+	uint8_t DLM = 0;  // Divisor Latch MSB (when DLAB=1)
+	uint8_t THR_reg = 0;
+	uint8_t FCR_reg = 0x01;
+	uint8_t IER_reg = 0;
+	uint8_t ISR_reg = 0;
+	uint8_t LCR_reg = 0;
+	uint8_t MCR_reg = 0;
+	uint8_t LSR_reg = UART_LSR_THRE;  // Initially THR is empty
+	uint8_t MSR_reg = 0;
+	uint8_t SPR_reg = 0;
+	uint8_t RHR_reg = 0;
+	uint8_t ISR_NO_INT = 0x01; // Interrupt identification register
 
 	SC_HAS_PROCESS(Qemu32UART);
 
@@ -95,22 +94,33 @@ struct Qemu32UART : public sc_core::sc_module {
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		auto addr = trans.get_address();
 		auto cmd = trans.get_command();
-		auto ptr = trans.get_data_ptr();
+		auto ptr = trans.get_data_ptr(); // see full content of ptr
 		uint32_t *data_ptr = reinterpret_cast<uint32_t*>(ptr);
+		std::cout << "initial FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
+
+		std::cout << "[UART] original addr: 0x" << std::hex << addr
+          << ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ")
+          << ", data_length: " << trans.get_data_length()
+          << ", data: ";
+		  for (unsigned i = 0; i < trans.get_data_length(); ++i) {
+			std::cout << "0x" << std::hex << (int)((unsigned char)ptr[i]) << " ";
+			}
+			std::cout << std::endl;
 
 		addr &= 0x7;  // 8 registers (0-7)
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 			char value = *ptr;
-			std::cout << "[UART WRITE] addr: 0x" << std::hex << (int)addr
-			          << ", value: " << value << std::endl;
+			std::cout << "addr: 0x" << std::hex << (int)addr
+					  << ", value: " << value << std::endl;
 
 			switch (addr) {
 				case THR:  // Write to THR or DLL (if DLAB=1)
-					if ((LSR_reg & UART_LSR_THRE) && !(LCR_reg & UART_LCR_DLAB)) { // check that THR Empty flag is set in the LSR
-						// trigger_send = true;
+				std::cout << "[THR]" <<std::endl;
+					if (!(LCR_reg & UART_LCR_DLAB)) {
 						THR_reg = value;
 						if(FCR_reg & UART_FCR_FE) {
+							std::cout << "write FIFO" <<std::endl;
 							if (txFifo.size() == rxFifoDepth) {
 								// If the FIFO is full, this pops the oldest byte from the FIFO.
 								txFifo.pop();
@@ -120,10 +130,8 @@ struct Qemu32UART : public sc_core::sc_module {
 						thr_ipending = 0;
 						LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
 						LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
-						// Check if the transmitter is busy
-						// if (LSR_reg & UART_LSR_TEMT) {}
-						// irq
-						run_event.notify(); // call run
+						run_event.notify();
+						// serial_update_irq(s);
 					}
 					break;
 
@@ -156,7 +164,6 @@ struct Qemu32UART : public sc_core::sc_module {
 					// check timeout, FIFO clear
 					if (value & UART_FCR_RFR) { // check if FIFO receive clear flag is set
 						LSR_reg &= ~(UART_LSR_DR | UART_LSR_BI);
-						timeout_ipending = 0;
 						rxFifo = std::queue<unsigned char>(); // reset Rx FIFO
 					}
 
@@ -167,11 +174,13 @@ struct Qemu32UART : public sc_core::sc_module {
 					}
 
 					/* serial write fcr */
-					FCR_reg = value;
+					FCR_reg = value & 0xC9;
+					std::cout << "[WRITE FCR] FCR_reg: 0x" << std::hex << FCR_reg <<std::endl;
 					if (value & UART_FCR_FE) {
+						std::cout << "[WRITE FCR] serial write fcr" << std::endl;
 						ISR_reg |= UART_ISR_FE;
 						/* Set recv_fifo trigger Level */
-						switch (value & 0xC0) {
+						switch ((value & 0xC9) & 0xC0) {
 							case UART_FCR_ITL_1:
 								recv_fifo_itl = 1;
 								break;
@@ -315,10 +324,12 @@ struct Qemu32UART : public sc_core::sc_module {
 			// check interrupts
 
 			// Check if there are characters to transmit
-			if (thr_ipending) {
+			std::cout << "[RUN] thr_ipending: " << thr_ipending << std::endl;
+			std::cout << "[RUN] txFifo.size(): " << txFifo.size() << std::endl;
+			if (!thr_ipending && !txFifo.empty()) {
 				// Transmit data
 				char tx_char = txFifo.front();
-				std::cout << "tx_char: " << tx_char << std::endl;
+				std::cout << "[RUN] tx_char: " << tx_char << std::endl;
 				std::cout << tx_char << std::flush;  // Actual output
 				txFifo.pop();
 				THR_reg = tx_char;
