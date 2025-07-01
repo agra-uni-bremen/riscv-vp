@@ -58,6 +58,16 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 		trans.set_data_length(num_bytes);
 		trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
+		if (cmd == tlm::TLM_WRITE_COMMAND) {
+        	std::cout << "[MEM] WRITE to 0x" << std::hex << addr << " size: " << std::dec << num_bytes << " bytes, data:";
+        	for (unsigned i = 0; i < num_bytes; ++i)
+            	std::cout << " 0x" << std::hex << (int)data[i];
+        	std::cout << std::endl;
+			if (addr >= 0x10000000 && addr <= 0x100000ff) {
+            	std::cout << "  ---> [UART ACCESS]" << std::endl;
+			}
+		}
+
 		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
 
 		isock->b_transport(trans, local_delay);
