@@ -27,17 +27,25 @@
 #define UART_LSR_TEMT 0x40 // Transmitter empty
 #define UART_LSR_DR   0x01  // Data Ready
 #define UART_LSR_BI   0x10	// Break interrupt indicator
-#define UART_LSR_OE	  0x02	/* Overrun error indicator */
-#define UART_IER_MSI  0x08	// Enable Modem status interrupt
-#define UART_IER_THRI 0x02	// Enable Transmitter holding register int.
+#define UART_LSR_OE   0x02	/* Overrun error indicator */
 #define UART_FCR_FE   0x01 // FIFO enable
 #define UART_FCR_XFR  0x04    /* XMIT Fifo Reset */
 #define UART_FCR_RFR  0x02    /* RCVR Fifo Reset */
 #define UART_ISR_FE   0xC0    /* Fifo enabled */
-#define UART_ISR_ID	  0x06	/* Mask for the interrupt ID */
+#define UART_ISR_ID   0x06	/* Mask for the interrupt ID */
 #define UART_ISR_THRI 0x02	/* Transmitter holding register empty */
 #define UART_MCR_LOOP 0x10	/* Enable loopback test mode */
 #define UART_MSR_ANY_DELTA 0x0F	/* Any of the delta bits! */
+#define UART_LSR_INT_ANY 0x1E	/* Any of the lsr-interrupt-triggering status bits */
+#define UART_ISR_MSI	0x00	/* Modem status interrupt */
+#define UART_ISR_THRI	0x02	/* Transmitter holding register empty */
+#define UART_ISR_RDI	0x04	/* Receiver data interrupt */
+#define UART_ISR_RLSI	0x06	/* Receiver line status interrupt */
+#define UART_ISR_CTI    0x0C    /* Character Timeout Indication */
+#define UART_IER_MSI  0x08	/* Enable Modem status interrupt */
+#define UART_IER_RLSI 0x04	/* Enable receiver line status interrupt */
+#define UART_IER_THRI 0x02	/* Enable Transmitter holding register int. */
+#define UART_IER_RDI  0x01	/* Enable receiver data interrupt */
 
 uint8_t DLL = 0;  // Divisor Latch LSB (when DLAB=1)
 uint8_t DLM = 0;  // Divisor Latch MSB (when DLAB=1)
@@ -87,9 +95,27 @@ struct Qemu32UART : public sc_core::sc_module {
 		SC_THREAD(run);
 	}
 	void check_interrupts() {
-		if ((IER_reg & 0x04) && (LSR_reg & 0x1E)) {  // Line status error
-			// new_isr = ISR_RLSI;
-		}
+                uint8_t new_isr = ISR_NO_INT;
+
+		if ((IER_reg & UART_IER_RLSI) && (LSR_reg & UART_LSR_INT_ANY)) {  // Reciever Line Status (Prio 1)
+			new_isr = UART_ISR_RLSI;
+		} else if ((IER_reg & UART_IER_RDI) && (LSR_reg & UART_LSR_DR)) {  // Received Data Ready (Prio 2)
+                        new_isr = UART_ISR_RDI; 
+		} else if ((IER_reg & UART_IER_RDI) && (timeout_ipending)) {  // Reception Timeout (Prio 2)
+                        new_isr = UART_ISR_CTI;
+		} else if ((IER_reg & UART_IER_THRI) && (thr_ipending)) {  // Transmitter Holding Register Empty (Prio 3)
+                        new_isr = UART_ISR_THRI;
+		} else if ((IER_reg & UART_IER_MSI) && (MSR_reg & UART_MSR_ANY_DELTA)) {  // Modem Status (Prio 4)
+                        new_isr = UART_ISR_MSI;
+                }
+
+                ISR_reg = new_isr | (ISR_reg & 0xF0); // Preserve FIFO and DMA flags
+
+                if (new_isr != ISR_NO_INT) {
+                    plic->gateway_trigger_interrupt(new_isr);
+                } else {
+                    plic->gateway_trigger_interrupt(ISR_NO_INT); // Default
+                }
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -123,6 +149,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						// Check if the transmitter is busy
 						// if (LSR_reg & UART_LSR_TEMT) {}
 						// irq
+                                                check_interrupts();
 						run_event.notify(); // call run
 					}
 					break;
@@ -142,6 +169,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						}
 
 						if (changed) {
+                                                        check_interrupts();
 							// serial_update_irq(s);
 						}
 					}
@@ -188,6 +216,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					} else {
 						ISR_reg &= ~UART_ISR_FE;
 					}
+                                        check_interrupts();
 					// serial_update_irq(s);
 					break;
 
@@ -237,6 +266,7 @@ struct Qemu32UART : public sc_core::sc_module {
 							ret = RHR_reg;
 							LSR_reg &= ~(UART_LSR_DR | UART_LSR_BI);
 						}
+                                                check_interrupts();
 						// serial_update_irq(s);
 						// if (!(MCR_reg & UART_MCR_LOOP)) {}
 					}
@@ -250,6 +280,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					ret = ISR_reg;
 					if ((ret & UART_ISR_ID) == UART_ISR_THRI) {
 						thr_ipending = 0;
+                                                check_interrupts();
 						// serial_update_irq(s);
 					}
 					break;
@@ -267,6 +298,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					/* Clear break and overrun interrupts */
 					if (LSR_reg & (UART_LSR_BI|UART_LSR_OE)) {
 						LSR_reg &= ~(UART_LSR_BI|UART_LSR_OE);
+                                                check_interrupts();
 						// serial_update_irq(s);
 					}
 					break;
@@ -285,6 +317,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						/* Clear delta bits & msr int after read, if they were set */
 						if (MSR_reg & UART_MSR_ANY_DELTA) {
 							MSR_reg &= 0xF0;
+                                                        check_interrupts();
 							// serial_update_irq(s);
 						}
 					}
