@@ -101,6 +101,18 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 		irq_level = level;
 		SC_THREAD(run);
+
+		std::cout << "[PLIC] regs_hart_enabled_interrupts: start=0x"
+		<< std::hex << regs_hart_enabled_interrupts.start
+		<< ", end=0x" << std::hex
+		<< regs_hart_enabled_interrupts.end
+		<< std::endl;
+
+		std::cout << "[PLIC] regs_hart_config: start=0x"
+		<< std::hex << regs_hart_config.start
+		<< ", end=0x" << std::hex
+		<< regs_hart_config.end
+		<< std::endl;
 	}
 
 	void gateway_trigger_interrupt(uint32_t irq_id) {
@@ -156,7 +168,11 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		delay += 4 * clock_cycle;
-		//std::cout << "[vp::plic] Writing at 0x" << trans.get_address() << " value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
+
+		auto cmd = trans.get_command();
+
+		std::cout << "[PLIC FE310] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << trans.get_address() << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
+
 		vp::mm::route("FE310_PLIC", register_ranges, trans, delay);
 	}
 

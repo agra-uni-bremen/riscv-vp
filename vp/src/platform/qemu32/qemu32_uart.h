@@ -38,7 +38,6 @@
 #define UART_MSR_ANY_DELTA 0x0F	/* Any of the delta bits! */
 #define UART_LSR_INT_ANY 0x1E	/* Any of the lsr-interrupt-triggering status bits */
 #define UART_ISR_MSI	0x00	/* Modem status interrupt */
-#define UART_ISR_THRI	0x02	/* Transmitter holding register empty */
 #define UART_ISR_RDI	0x04	/* Receiver data interrupt */
 #define UART_ISR_RLSI	0x06	/* Receiver line status interrupt */
 #define UART_ISR_CTI    0x0C    /* Character Timeout Indication */
@@ -64,7 +63,7 @@ struct Qemu32UART : public sc_core::sc_module {
 	uint32_t irq_number = 0;
 	int poll_msl;
 	int thr_ipending;
-        int timeout_ipending;
+	int timeout_ipending;
 	uint8_t recv_fifo_itl;          // Interrupt trigger level for recv_fifo
 
 	// tx
@@ -95,27 +94,29 @@ struct Qemu32UART : public sc_core::sc_module {
 		SC_THREAD(run);
 	}
 	void check_interrupts() {
-                uint8_t new_isr = ISR_NO_INT;
+		uint8_t new_isr = ISR_NO_INT;
 
 		if ((IER_reg & UART_IER_RLSI) && (LSR_reg & UART_LSR_INT_ANY)) {  // Reciever Line Status (Prio 1)
 			new_isr = UART_ISR_RLSI;
 		} else if ((IER_reg & UART_IER_RDI) && (LSR_reg & UART_LSR_DR)) {  // Received Data Ready (Prio 2)
-                        new_isr = UART_ISR_RDI; 
+			new_isr = UART_ISR_RDI; 
 		} else if ((IER_reg & UART_IER_RDI) && (timeout_ipending)) {  // Reception Timeout (Prio 2)
-                        new_isr = UART_ISR_CTI;
+            new_isr = UART_ISR_CTI;
 		} else if ((IER_reg & UART_IER_THRI) && (thr_ipending)) {  // Transmitter Holding Register Empty (Prio 3)
-                        new_isr = UART_ISR_THRI;
+            new_isr = UART_ISR_THRI;
 		} else if ((IER_reg & UART_IER_MSI) && (MSR_reg & UART_MSR_ANY_DELTA)) {  // Modem Status (Prio 4)
-                        new_isr = UART_ISR_MSI;
-                }
+			new_isr = UART_ISR_MSI;
+		}
+		ISR_reg = new_isr | (ISR_reg & 0xF0); // Preserve FIFO and DMA flags
+		std::cout << "Update_irq, " << "new_isr: 0x" << std::hex << (int)new_isr << ", ISR_reg: 0x" << std::hex << (int)ISR_reg << std::endl;
 
-                ISR_reg = new_isr | (ISR_reg & 0xF0); // Preserve FIFO and DMA flags
-
-                if (new_isr != ISR_NO_INT) {
-                    plic->gateway_trigger_interrupt(new_isr);
-                } else {
-                    plic->gateway_trigger_interrupt(ISR_NO_INT); // Default interrupt status (currently redundant)
-                }
+		if (new_isr != ISR_NO_INT) {
+			std::cout << "plic->gateway_trigger_interrupt(new_isr)" << std::endl;
+			plic->gateway_trigger_interrupt(new_isr);
+		} else {
+			std::cout << "plic->gateway_trigger_interrupt(ISR_NO_INT)" << std::endl;
+			plic->gateway_trigger_interrupt(ISR_NO_INT); // Default interrupt status (currently redundant)
+		}
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -123,7 +124,7 @@ struct Qemu32UART : public sc_core::sc_module {
 		auto cmd = trans.get_command();
 		auto ptr = trans.get_data_ptr(); // see full content of ptr
 		uint32_t *data_ptr = reinterpret_cast<uint32_t*>(ptr);
-		std::cout << "initial FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
+		// std::cout << "initial FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
 
 		std::cout << "[UART] original addr: 0x" << std::hex << addr
           << ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ")
@@ -139,7 +140,7 @@ struct Qemu32UART : public sc_core::sc_module {
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 			char value = *ptr;
 			std::cout << "addr: 0x" << std::hex << (int)addr
-					  << ", value: " << value << std::endl;
+					  << ", value: 0x" << std::hex << (unsigned int)(unsigned char)value << std::endl;
 
 			switch (addr) {
 				case THR:  // Write to THR or DLL (if DLAB=1)
@@ -158,7 +159,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
 						LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
 						run_event.notify(); // call run
-                                                check_interrupts();
+						check_interrupts();
 					}
 					break;
 
@@ -177,7 +178,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						}
 
 						if (changed) {
-                                                        check_interrupts();
+							check_interrupts();
 							// serial_update_irq(s);
 						}
 					}
@@ -203,9 +204,10 @@ struct Qemu32UART : public sc_core::sc_module {
 
 					/* serial write fcr */
 					FCR_reg = value & 0xC9;
-					std::cout << "[WRITE FCR] FCR_reg: 0x" << std::hex << FCR_reg <<std::endl;
+					std::cout << "[WRITE FCR] value: 0x" << std::hex << (unsigned int)(unsigned char)value << ", FCR_reg: 0x" << std::hex << (int)FCR_reg << std::endl;
+
 					if (value & UART_FCR_FE) {
-						std::cout << "[WRITE FCR] serial write fcr" << std::endl;
+						// std::cout << "[WRITE FCR] serial write fcr" << std::endl;
 						ISR_reg |= UART_ISR_FE;
 						/* Set recv_fifo trigger Level */
 						switch ((value & 0xC9) & 0xC0) {
@@ -225,7 +227,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					} else {
 						ISR_reg &= ~UART_ISR_FE;
 					}
-                                        check_interrupts();
+					check_interrupts();
 					// serial_update_irq(s);
 					break;
 
@@ -275,7 +277,7 @@ struct Qemu32UART : public sc_core::sc_module {
 							ret = RHR_reg;
 							LSR_reg &= ~(UART_LSR_DR | UART_LSR_BI);
 						}
-                                                check_interrupts();
+						check_interrupts();
 						// serial_update_irq(s);
 						// if (!(MCR_reg & UART_MCR_LOOP)) {}
 					}
@@ -289,7 +291,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					ret = ISR_reg;
 					if ((ret & UART_ISR_ID) == UART_ISR_THRI) {
 						thr_ipending = 0;
-                                                check_interrupts();
+						check_interrupts();
 						// serial_update_irq(s);
 					}
 					break;
@@ -307,7 +309,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					/* Clear break and overrun interrupts */
 					if (LSR_reg & (UART_LSR_BI|UART_LSR_OE)) {
 						LSR_reg &= ~(UART_LSR_BI|UART_LSR_OE);
-                                                check_interrupts();
+						check_interrupts();
 						// serial_update_irq(s);
 					}
 					break;
@@ -326,7 +328,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						/* Clear delta bits & msr int after read, if they were set */
 						if (MSR_reg & UART_MSR_ANY_DELTA) {
 							MSR_reg &= 0xF0;
-                                                        check_interrupts();
+							check_interrupts();
 							// serial_update_irq(s);
 						}
 					}

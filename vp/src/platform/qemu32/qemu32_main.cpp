@@ -16,6 +16,7 @@
 #include "platform/common/options.h"
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
+#include "fe310_plic.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -41,6 +42,9 @@ class BasicOptions : public Options {
 
 	addr_t uart_start_addr = 0x10000000;
 	addr_t uart_end_addr = uart_start_addr + 0xff;
+
+	addr_t plic_start_addr = 0x0c000000;
+	addr_t plic_end_addr = 0x0c5fffff;
 
 	addr_t ram_size = 32; // in unit MB
 	addr_t mem_size = ram_size * 1024 * 1024;
@@ -94,12 +98,13 @@ int sc_main(int argc, char **argv) {
 	ISS core(0, opt.use_E_base_isa); // warn 2
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 4> bus("SimpleBus");
+	SimpleBus<2, 5> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);  // warn 1, loop
 	SyscallHandler sys("SyscallHandler");
 	Qemu32CLINT<1> qemu32_clint("Qemu32CLINT");
 	// UART16550 qemu32_uart("Qemu32UART");
 	Qemu32UART qemu32_uart("Qemu32UART", 6);
+	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -146,6 +151,7 @@ int sc_main(int argc, char **argv) {
 		bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 		bus.ports[it++] = new PortMapping(opt.uart_start_addr, opt.uart_end_addr);
 		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
 	}
 
 	// connect TLM sockets
@@ -158,10 +164,13 @@ int sc_main(int argc, char **argv) {
 		bus.isocks[it++].bind(qemu32_clint.tsock);
 		bus.isocks[it++].bind(qemu32_uart.tsock);
 		bus.isocks[it++].bind(sys.tsock);
+		bus.isocks[it++].bind(plic.tsock);
 	}
 
 	// connect interrupt signals/communication
 	qemu32_clint.target_harts[0] = &core;
+	plic.target_harts[0] = &core;
+	qemu32_uart.plic = &plic;
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
