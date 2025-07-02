@@ -37,10 +37,12 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		uint32_t priority_threshold;
 		uint32_t claim_response;
 	};
-	RegisterRange regs_hart_enabled_interrupts{0x2000, sizeof(uint32_t) * WORDS_FOR_INTERRUPT_ENTRIES * NumberCores};
+	// RegisterRange regs_hart_enabled_interrupts{0x2000, sizeof(uint32_t) * WORDS_FOR_INTERRUPT_ENTRIES * NumberCores};
+	RegisterRange regs_hart_enabled_interrupts{0x2000, 0xf0 * NumberCores};
 	ArrayView<uint32_t> hart_enabled_interrupts{regs_hart_enabled_interrupts};
 
-	RegisterRange regs_hart_config{0x200000, sizeof(HartConfig) * NumberCores};
+	// RegisterRange regs_hart_config{0x200000, sizeof(HartConfig) * NumberCores};
+	RegisterRange regs_hart_config{0x200000, 0x2000};
 	ArrayView<HartConfig> hart_config{regs_hart_config};
 
 	std::vector<RegisterRange *> register_ranges{&regs_interrupt_priorities,

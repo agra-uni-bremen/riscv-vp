@@ -278,6 +278,7 @@ void ISS::exec_step() {
 		case Opcode::SB: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			int32_t value = regs[instr.rs2()];
+			std::cout << "\n" << std::endl;
     		std::cout << "[ISS] SB: store byte 0x" << std::hex << (value & 0xFF)
 			<< " to 0x" << addr << std::endl;
 			mem->store_byte(addr, regs[instr.rs2()]);
@@ -286,7 +287,7 @@ void ISS::exec_step() {
 		case Opcode::SH: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			int32_t value = regs[instr.rs2()];
-    		std::cout << "[ISS] SH: store half 0x" << std::hex << (value & 0xFFFF) << " to 0x" << addr << std::endl;
+    		// std::cout << "[ISS] SH: store half 0x" << std::hex << (value & 0xFFFF) << " to 0x" << addr << std::endl;
 			trap_check_addr_alignment<2, false>(addr);
 			mem->store_half(addr, regs[instr.rs2()]);
 		} break;
@@ -294,7 +295,7 @@ void ISS::exec_step() {
 		case Opcode::SW: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			int32_t value = regs[instr.rs2()];
-    		std::cout << "[ISS] SW: store word 0x" << std::hex << value << " to 0x" << addr << std::endl;
+    		// std::cout << "[ISS] SW: store word 0x" << std::hex << value << " to 0x" << addr << std::endl;
 			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
