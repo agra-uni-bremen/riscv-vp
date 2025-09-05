@@ -81,7 +81,7 @@ struct Qemu32UART : public sc_core::sc_module {
 	uint8_t DLL = 0;  // Divisor Latch LSB (when DLAB=1)
 	uint8_t DLM = 0;  // Divisor Latch MSB (when DLAB=1)
 	uint8_t THR_reg = 0;
-	uint8_t FCR_reg = 0;
+	uint8_t FCR_reg = 0x01;
 	uint8_t IER_reg = 0;
 	uint8_t ISR_reg = ISR_NO_INT;
 	uint8_t LCR_reg = 0;
@@ -147,22 +147,23 @@ struct Qemu32UART : public sc_core::sc_module {
 
 			switch (addr) {
 				case THR:  // Write to THR or DLL (if DLAB=1)
-					if (!(LCR_reg & UART_LCR_DLAB)) {
-						THR_reg = value;
-						if(FCR_reg & UART_FCR_FE) {
-							std::cout << "write FIFO" <<std::endl;
-							if (txFifo.size() == rxFifoDepth) {
-								// If the FIFO is full, this pops the oldest byte from the FIFO.
-								txFifo.pop();
-							}
-							txFifo.push(value); // Store character
+					// if (!(LCR_reg & UART_LCR_DLAB)) {
+					THR_reg = value;
+					std::cout << "[UART] case 0, FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
+					if(FCR_reg & UART_FCR_FE) {
+						std::cout << "write FIFO" <<std::endl;
+						if (txFifo.size() == rxFifoDepth) {
+							// If the FIFO is full, this pops the oldest byte from the FIFO.
+							txFifo.pop();
 						}
-						thr_ipending = 0;
-						LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
-						LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
-						run_event.notify(); // call run
-						check_interrupts();
+						txFifo.push(value); // Store character
 					}
+					thr_ipending = 0;
+					LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
+					LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
+					run_event.notify(); // call run
+					check_interrupts();
+					// }
 					
 					std::cout << "[UART] case 0, LSR_reg: 0x" << std::hex << (int)LSR_reg <<std::endl;
 					std::cout << "[UART] case 0: thr_ipending: " << thr_ipending << std::endl;
@@ -179,7 +180,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						IER_reg = value & 0x0f;
 
 						if (changed & UART_IER_THRI) {
-							if ((IER_reg & UART_IER_THRI) && (LCR_reg & UART_LSR_THRE)) {
+							if ((IER_reg & UART_IER_THRI) && (LSR_reg & UART_LSR_THRE)) {
 								thr_ipending = 1;
 							} else {
 								thr_ipending = 0;
@@ -275,7 +276,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					break;
 			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
-			uint32_t ret;
+			uint32_t ret = 0;
 			char value = *ptr;
 
 			switch (addr) {
@@ -379,17 +380,6 @@ struct Qemu32UART : public sc_core::sc_module {
 		delay += sc_core::sc_time(50, sc_core::SC_NS);
 	}
 
-
-//	sc_core::sc_time calculateTransmissionDelay() {
-//		// Calculate based on baud rate (DLL/DLM)
-//		// Default to 115200 baud if divisor is 0
-//		uint16_t divisor = (DLM << 8) | DLL;
-//		if (divisor == 0) divisor = 1;
-//		double baud_rate = 115200.0 / divisor;
-//		double bit_time = 1.0 / baud_rate;
-//		return sc_core::sc_time(bit_time * 10, sc_core::SC_SEC);  // 10 bits per char (8N1)
-//	}
-
 	void run() {
 		while (true) {
 			// check interrupts
@@ -397,14 +387,22 @@ struct Qemu32UART : public sc_core::sc_module {
 			// Check if there are characters to transmit
 			std::cout << "[RUN] thr_ipending: " << thr_ipending << std::endl;
 			std::cout << "[RUN] txFifo.size(): " << txFifo.size() << std::endl;
-			if (!thr_ipending && !txFifo.empty()) {
+			// if (!thr_ipending && !txFifo.empty()) {
+			if (!txFifo.empty()) {
 				// Transmit data
 				char tx_char = txFifo.front();
 				std::cout << "[RUN] tx_char: " << tx_char << std::endl;
 				std::cout << tx_char << std::flush;  // Actual output
 				txFifo.pop();
 				THR_reg = tx_char;
-				LSR_reg &= ~UART_LSR_TEMT;
+				std::cout << tx_char << std::flush; // host output
+				// LSR_reg &= ~UART_LSR_TEMT;
+				LSR_reg |= UART_LSR_THRE | UART_LSR_TEMT;
+				// THR became empty -> request THRE interrupt if enabled
+				if (IER_reg & UART_IER_THRI) {
+					thr_ipending = 1;
+				}
+				check_interrupts();
 				run_event.notify(sc_core::sc_time(87, sc_core::SC_US));
 			}
 
@@ -416,7 +414,6 @@ struct Qemu32UART : public sc_core::sc_module {
 				LSR_reg |= UART_LSR_DR;
 			}
 			sc_core::wait(run_event);
-			plic->gateway_trigger_interrupt(irq_number);
 		}
 	}
 };
