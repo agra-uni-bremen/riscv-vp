@@ -73,7 +73,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		
 		//if (trace_mode) {
 		regs_hart_enabled_interrupts.post_write_callback = [this](RegisterRange::WriteInfo t){
-			std::cout << "[vp::plic] Wrote enabled_interrupts at offs +" << std::dec << t.addr << " value 0x" << std::hex << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << std::dec << std::endl;
+			// std::cout << "[vp::plic] Wrote enabled_interrupts at offs +" << std::dec << t.addr << " value 0x" << std::hex << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << std::dec << std::endl;
 			for (unsigned n = 0; n < NumberCores; ++n) {
 				for (unsigned i = 0; i < WORDS_FOR_INTERRUPT_ENTRIES; ++i) {
 					const uint32_t itr_group = hart_enabled_interrupts(n, i);
