@@ -68,6 +68,8 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 		auto *ptr = trans.get_data_ptr();
 		auto len = trans.get_data_length();
 
+		// std::cout << "[SIMPLE MEM] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << addr << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
+
 		assert(addr < size);
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {

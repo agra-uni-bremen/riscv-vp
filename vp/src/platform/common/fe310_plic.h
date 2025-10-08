@@ -96,7 +96,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		for (unsigned n = 0; n < NumberCores; ++n) {
 		    target_harts[n] = nullptr;
 			hart_eip[n] = false;
-			std::cout << "[PLIC FE310] FE310_PLIC(), hart_eip[" << n << "] = " << hart_eip[n] << std::endl;
+			// std::cout << "[PLIC FE310] FE310_PLIC(), hart_eip[" << n << "] = " << hart_eip[n] << std::endl;
 			for (unsigned i = 0; i < WORDS_FOR_INTERRUPT_ENTRIES; ++i) {
 				hart_enabled_interrupts(n, i) = 0;  // all interrupts disabled by default
 			}
@@ -105,7 +105,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		irq_level = level;
 		SC_THREAD(run);
 
-		std::cout << "[PLIC FE310] regs_hart_enabled_interrupts: start=0x"
+		/* std::cout << "[PLIC FE310] regs_hart_enabled_interrupts: start=0x"
 		<< std::hex << regs_hart_enabled_interrupts.start
 		<< ", end=0x" << std::hex
 		<< regs_hart_enabled_interrupts.end
@@ -115,11 +115,11 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		<< std::hex << regs_hart_config.start
 		<< ", end=0x" << std::hex
 		<< regs_hart_config.end
-		<< std::endl;
+		<< std::endl;*/
 	}
 
 	void gateway_trigger_interrupt(uint32_t irq_id) {
-		std::cout << "[PLIC FE310] gateway_trigger_interrupt: irq_id: " << irq_id << std::endl;
+		// std::cout << "[PLIC FE310] gateway_trigger_interrupt: irq_id: " << irq_id << std::endl;
 		// NOTE: can use different techniques for each gateway, in this case a
 		// simple non queued edge trigger
 		assert(irq_id > 0 && irq_id < NumberInterrupts);
@@ -130,7 +130,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 		pending_interrupts[idx] |= 1 << off;
 
-		std::cout << "[PLIC FE310] gateway_trigger_interrupt: pending_interrupts[" << idx << "] = 0x" << std::hex << pending_interrupts[idx] << std::endl;
+		// std::cout << "[PLIC FE310] gateway_trigger_interrupt: pending_interrupts[" << idx << "] = 0x" << std::hex << pending_interrupts[idx] << std::endl;
 
 		e_run.notify(clock_cycle);
 	}
@@ -146,7 +146,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 	unsigned hart_get_next_pending_interrupt(unsigned hart_id, bool consider_threshold) {
-		std::cout << "[PLIC DEBUG] hart_get_next_pending_interrupt()" << std::endl;
+		// std::cout << "[PLIC DEBUG] hart_get_next_pending_interrupt()" << std::endl;
 		
 		unsigned min_id = 0;
 		unsigned max_priority = 0;
@@ -155,10 +155,10 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			unsigned idx = i / 32;
 			unsigned off = i % 32;
 			
-			std::cout << "[PLIC DEBUG] hart_enabled_interrupts(" << hart_id << ", " << idx << ") = 0x" << std::hex << hart_enabled_interrupts(hart_id, idx) << std::endl;
-			std::cout << "[PLIC DEBUG] pending_interrupts[" << idx << "] = 0x" << std::hex << pending_interrupts[idx] << std::endl;
-			std::cout << "[PLIC DEBUG] interrupt_priorities[" << i << "] = " << interrupt_priorities[i] << std::endl;
-			std::cout << "[PLIC DEBUG] threshold = " << hart_config[hart_id].priority_threshold << std::endl;
+			// std::cout << "[PLIC DEBUG] hart_enabled_interrupts(" << hart_id << ", " << idx << ") = 0x" << std::hex << hart_enabled_interrupts(hart_id, idx) << std::endl;
+			// std::cout << "[PLIC DEBUG] pending_interrupts[" << idx << "] = 0x" << std::hex << pending_interrupts[idx] << std::endl;
+			// std::cout << "[PLIC DEBUG] interrupt_priorities[" << i << "] = " << interrupt_priorities[i] << std::endl;
+			// std::cout << "[PLIC DEBUG] threshold = " << hart_config[hart_id].priority_threshold << std::endl;
 
 			if (hart_enabled_interrupts(hart_id, idx) & (1 << off)) {
 				if (trace_mode) std::cout << "[vp::plic] hart " << hart_id << " has enabled ITR " << i << std::endl;
@@ -175,7 +175,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 				}
 			}
 		}
-		std::cout << "[PLIC FE310] hart_get_next_pending_interrupt, min_id: " << min_id << std::endl;
+		// std::cout << "[PLIC FE310] hart_get_next_pending_interrupt, min_id: " << min_id << std::endl;
 
 		return min_id;
 	}
@@ -187,11 +187,11 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		auto cmd = trans.get_command();
 		uint32_t addr = trans.get_address();
 
-		std::cout << "[PLIC FE310] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << addr << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
+		//std::cout << "[PLIC FE310] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << addr << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
 
 		// Check if this is trying to access Hart 1
 		if (addr >= 0x2080 && addr < 0x2100) {
-			std::cout << "[PLIC FE310] WARNING: Software trying to access Hart 1 registers (addr=0x" << std::hex << addr << ") but only Hart 0 exists!" << std::endl;
+			// std::cout << "[PLIC FE310] WARNING: Software trying to access Hart 1 registers (addr=0x" << std::hex << addr << ") but only Hart 0 exists!" << std::endl;
 		}
 
 		vp::mm::route("FE310_PLIC", register_ranges, trans, delay);
@@ -225,7 +225,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 	void post_write_hart_config(RegisterRange::WriteInfo t) {
-		std::cout << "[PLIC DEBUG] post_write_hart_config()" << std::endl;
+		// std::cout << "[PLIC DEBUG] post_write_hart_config()" << std::endl;
 		assert(t.addr % 4 == 0);
 		unsigned idx = t.addr / 4;
 
@@ -234,7 +234,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			assert(t.size == 4);
 			--idx;
 			if (trace_mode) std::cout << "[vp::plic] wrote ITR claim/response" << std::endl;
-			std::cout << "[PLIC DEBUG] wrote ITR claim/response" << std::endl;
+			// std::cout << "[PLIC DEBUG] wrote ITR claim/response" << std::endl;
 
 			if (hart_has_pending_enabled_interrupts(idx)) {
 				assert(hart_eip[idx]);
@@ -243,32 +243,32 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			} else {
 				hart_eip[idx] = false;
 				target_harts[idx]->clear_external_interrupt(irq_level);
-				std::cout << "[PLIC DEBUG] clear eip" << std::endl;
+				// std::cout << "[PLIC DEBUG] clear eip" << std::endl;
 
 				if (trace_mode) std::cout << "[vp::plic] clear eip" << std::endl;
 			}
 		} else {
-			std::cout << "[PLIC DEBUG] wrote ITR priority threshold 0x" << std::hex << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << " for hart " << idx/2 << std::dec << std::endl;
+			// std::cout << "[PLIC DEBUG] wrote ITR priority threshold 0x" << std::hex << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << " for hart " << idx/2 << std::dec << std::endl;
 
 			if (trace_mode) std::cout << "[vp::plic] wrote ITR priority threshold 0x" << std::hex << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << " for hart " << idx/2 << std::dec << std::endl;
 		}
 	}
 
 	bool hart_has_pending_enabled_interrupts(unsigned hart_id) {
-		std::cout << "[PLIC DEBUG] hart_has_pending_enabled_interrupts()" << std::endl;
+		// std::cout << "[PLIC DEBUG] hart_has_pending_enabled_interrupts()" << std::endl;
 		return hart_get_next_pending_interrupt(hart_id, true) > 0;
 	}
 
 	void run() {
 		while (true) {
-			std::cout << "[PLIC FE310] run "<< std::endl;
+			// std::cout << "[PLIC FE310] run "<< std::endl;
 			sc_core::wait(e_run);
 
 			for (unsigned i = 0; i < NumberCores; ++i) {
-				std::cout << "[PLIC FE310] run: hart_eip[" << i << "]: " << hart_eip[i] << std::endl;
+				// std::cout << "[PLIC FE310] run: hart_eip[" << i << "]: " << hart_eip[i] << std::endl;
 				if (!hart_eip[i]) {
 					if (hart_has_pending_enabled_interrupts(i)) {
-						std::cout << "[PLIC FE310] trigger interrupt, irq_level:  " << irq_level << std::endl;
+						// std::cout << "[PLIC FE310] trigger interrupt, irq_level:  " << irq_level << std::endl;
 						if (trace_mode) std::cout << "[vp::plic] trigger interrupt " << hart_get_next_pending_interrupt(i, true) << std::hex << std::endl;
 						hart_eip[i] = true;
 						target_harts[i]->trigger_external_interrupt(irq_level);

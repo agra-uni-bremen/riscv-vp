@@ -81,12 +81,12 @@ struct Qemu32UART : public sc_core::sc_module {
 	uint8_t DLL = 0;  // Divisor Latch LSB (when DLAB=1)
 	uint8_t DLM = 0;  // Divisor Latch MSB (when DLAB=1)
 	uint8_t THR_reg = 0;
-	uint8_t FCR_reg = 0x01;
+	uint8_t FCR_reg = 0; // 0x01;
 	uint8_t IER_reg = 0;
 	uint8_t ISR_reg = ISR_NO_INT;
 	uint8_t LCR_reg = 0;
 	uint8_t MCR_reg = UART_MCR_OUT2;
-	uint8_t LSR_reg = UART_LSR_TEMT | UART_LSR_THRE;  // Initially THR is empty
+	uint8_t LSR_reg = UART_LSR_TEMT | UART_LSR_THRE;  
 	uint8_t MSR_reg = UART_MSR_DCD | UART_MSR_DSR | UART_MSR_CTS;
 	uint8_t SPR_reg = 0;
 	uint8_t RHR_reg = 0;
@@ -147,25 +147,31 @@ struct Qemu32UART : public sc_core::sc_module {
 
 			switch (addr) {
 				case THR:  // Write to THR or DLL (if DLAB=1)
-					// if (!(LCR_reg & UART_LCR_DLAB)) {
-					THR_reg = value;
-					std::cout << "[UART] case 0, FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
-					if(FCR_reg & UART_FCR_FE) {
-						std::cout << "write FIFO" <<std::endl;
-						if (txFifo.size() == rxFifoDepth) {
-							// If the FIFO is full, this pops the oldest byte from the FIFO.
-							txFifo.pop();
+					if (!(LCR_reg & UART_LCR_DLAB)) {
+						THR_reg = value;
+						std::cout << "[UART] case 0, FCR_reg: 0x" << std::hex << (int)FCR_reg <<std::endl;
+						if(FCR_reg & UART_FCR_FE) {
+							std::cout << "write FIFO" <<std::endl;
+							if (txFifo.size() == rxFifoDepth) {
+								// If the FIFO is full, this pops the oldest byte from the FIFO.
+								txFifo.pop();
+							}
+							// txFifo.push(value); // Store character
+						} else {
+							while (!txFifo.empty()) {
+                      			txFifo.pop();
+                  			}
 						}
-						txFifo.push(value); // Store character
+						txFifo.push(static_cast<unsigned char>(value));
+
+						thr_ipending = 0;
+						LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
+						LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
+						check_interrupts();
+						run_event.notify(); // call run
 					}
-					thr_ipending = 0;
-					LSR_reg &= ~UART_LSR_THRE;  // THR not empty, transmitter busy
-					LSR_reg &= ~UART_LSR_TEMT; // Tx not empty
-					run_event.notify(); // call run
-					check_interrupts();
-					// }
 					
-					std::cout << "[UART] case 0, LSR_reg: 0x" << std::hex << (int)LSR_reg <<std::endl;
+					std::cout << "[UART] case 0, new LSR_reg: 0x" << std::hex << (int)LSR_reg <<std::endl;
 					std::cout << "[UART] case 0: thr_ipending: " << thr_ipending << std::endl;
 					if (txFifo.empty()) {
 						std::cout << "[UART] case 0: txFifo is empty" << std::endl;
@@ -276,7 +282,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					break;
 			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
-			uint32_t ret = 0;
+			uint32_t ret;
 			char value = *ptr;
 
 			switch (addr) {
@@ -320,7 +326,7 @@ struct Qemu32UART : public sc_core::sc_module {
 					if ((ret & UART_ISR_ID) == UART_ISR_THRI) {
 						std::cout << "[UART] case2: trigger irq" <<std::endl;
 						thr_ipending = 0;
-						// interrupts();
+						check_interrupts();
 						// serial_update_irq(s);
 					}
 					std::cout << "[UART] case 2, ISR_reg: 0x" << std::hex << (int)ISR_reg <<std::endl;
@@ -347,6 +353,7 @@ struct Qemu32UART : public sc_core::sc_module {
 						check_interrupts();
 						// serial_update_irq(s);
 					}
+					std::cout << "[UART] case 5: thr_ipending: " << thr_ipending << std::endl;
 					break;
 
 				case MSR:
@@ -373,8 +380,13 @@ struct Qemu32UART : public sc_core::sc_module {
 				case SPR:
 					std::cout << "[UART] case 7" <<std::endl;
 					ret = SPR_reg;
+
 					break;
 			}
+			unsigned len = trans.get_data_length();
+				for (unsigned i = 0; i < len; ++i) {
+    				ptr[i] = static_cast<unsigned char>((ret >> (i * 8)) & 0xFF);
+				}
 		}
 
 		delay += sc_core::sc_time(50, sc_core::SC_NS);
@@ -395,7 +407,6 @@ struct Qemu32UART : public sc_core::sc_module {
 				std::cout << tx_char << std::flush;  // Actual output
 				txFifo.pop();
 				THR_reg = tx_char;
-				std::cout << tx_char << std::flush; // host output
 				// LSR_reg &= ~UART_LSR_TEMT;
 				LSR_reg |= UART_LSR_THRE | UART_LSR_TEMT;
 				// THR became empty -> request THRE interrupt if enabled
@@ -404,14 +415,8 @@ struct Qemu32UART : public sc_core::sc_module {
 				}
 				check_interrupts();
 				run_event.notify(sc_core::sc_time(87, sc_core::SC_US));
-			}
-
-			if (rxFifo.size() > 0) {
-				// Get the next character from the receive FIFO
-				char rx_char = rxFifo.front();
-				rxFifo.pop();
-				RHR_reg = rx_char;
-				LSR_reg |= UART_LSR_DR;
+			} else {
+				std::cout << "txFifo is empty." << std::endl;
 			}
 			sc_core::wait(run_event);
 		}
