@@ -295,8 +295,6 @@ void ISS::exec_step() {
 		case Opcode::SW: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			int32_t value = regs[instr.rs2()];
-			// std::cout << "pc = " << std::hex << pc << std::endl;
-    		// std::cout << "[ISS] SW: store word 0x" << std::hex << value << " to 0x" << addr << std::endl;
 			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
@@ -1587,7 +1585,6 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 }
 
 void ISS::trigger_external_interrupt(PrivilegeLevel level) {
-	std::cout << "[ISS] trigger external interrupt " << std::endl;
 	if (trace)
 		std::cout << "[vp::iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 
@@ -1607,7 +1604,6 @@ void ISS::trigger_external_interrupt(PrivilegeLevel level) {
 }
 
 void ISS::clear_external_interrupt(PrivilegeLevel level) {
-	std::cout << "[ISS] clear external interrupt " << std::endl;
 	if (trace)
 		std::cout << "[vp::iss] clear external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 

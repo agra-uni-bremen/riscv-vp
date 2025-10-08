@@ -53,13 +53,13 @@ struct SimpleBus : sc_core::sc_module {
 		auto id = decode(addr);
 
 		auto cmd = trans.get_command();
-		if (id == 4 || id == 2) {
-			std::cout << "[BUS] addr: 0x" << std::hex << addr
-			<< ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << ", data_length: " << trans.get_data_length() << ", routed to isock index: " << id << std::endl;
-		}
+		// if (id == 4 || id == 2) {
+		// 	std::cout << "[BUS] addr: 0x" << std::hex << addr
+		// 	<< ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << ", data_length: " << trans.get_data_length() << ", routed to isock index: " << id << std::endl;
+		// }
 
 		if (addr >= 0x0c000000 && addr <= 0x0c5fffff) {
-			std::cout << "[BUS] --> PLIC access!" << std::endl;
+			// std::cout << "[BUS] --> PLIC access!" << std::endl;
 		}
 
 		if (id < 0) {
