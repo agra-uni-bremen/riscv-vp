@@ -184,7 +184,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 		delay += 4 * clock_cycle;
 
-		auto cmd = trans.get_command();
+		// auto cmd = trans.get_command();
 		uint32_t addr = trans.get_address();
 
 		//std::cout << "[PLIC FE310] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << addr << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;

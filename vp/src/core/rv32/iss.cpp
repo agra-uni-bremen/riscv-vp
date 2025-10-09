@@ -286,8 +286,6 @@ void ISS::exec_step() {
 		case Opcode::SH: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			int32_t value = regs[instr.rs2()];
-			// std::cout << "pc = " << std::hex << pc << std::endl;
-    		// std::cout << "[ISS] SH: store half 0x" << std::hex << (value & 0xFFFF) << " to 0x" << addr << std::endl;
 			trap_check_addr_alignment<2, false>(addr);
 			mem->store_half(addr, regs[instr.rs2()]);
 		} break;

@@ -1,12 +1,10 @@
 #include <cstdlib>
 #include <ctime>
 
-//#include "core/common/clint.h"
-#include "qemu32_clint.h"
+#include "core/common/clint.h"
 #include "elf_loader.h"
 #include "debug_memory.h"
 #include "qemu32_uart.h"
-// #include "uart16550.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
@@ -57,12 +55,10 @@ class BasicOptions : public Options {
 	OptionValue<unsigned long> entry_point;
 
 	BasicOptions(void) {
-		// clang-format off
 		add_options()
 			("ram-size", po::value<unsigned int>(&ram_size), "define the memory size (MB)")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)");
-		// clang-format on
 	};
 
 	void printValues(std::ostream& os) const override {
@@ -101,8 +97,7 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<2, 5> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);  // warn 1, loop
 	SyscallHandler sys("SyscallHandler");
-	Qemu32CLINT<1> qemu32_clint("Qemu32CLINT");
-	// UART16550 qemu32_uart("Qemu32UART");
+	CLINT<1> qemu32_clint("CLINT");
 	Qemu32UART qemu32_uart("Qemu32UART", 6);
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -127,7 +122,7 @@ int sc_main(int argc, char **argv) {
 		std::cout << "Using entry point from options: 0x" << std::hex << opt.entry_point.value << std::endl;
 		entry_point = opt.entry_point.value;
 	} else {
-		std::cout << "Entry point not available" << std::endl;
+		std::cout << "Entry point not available\n" << std::endl;
 	}
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
 
@@ -175,7 +170,7 @@ int sc_main(int argc, char **argv) {
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
 
-	core.trace = opt.trace_mode;  // switch for printing instructions
+	core.trace = opt.trace_mode;  
 	if (opt.use_debug_runner) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);
