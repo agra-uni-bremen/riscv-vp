@@ -125,7 +125,7 @@ struct Qemu32UART : public sc_core::sc_module {
 		auto addr = trans.get_address();
 		auto cmd = trans.get_command();
 		auto ptr = trans.get_data_ptr(); // see full content of ptr
-		uint32_t *data_ptr = reinterpret_cast<uint32_t*>(ptr);
+		// uint32_t *data_ptr = reinterpret_cast<uint32_t*>(ptr);
 
 		// std::cout << "\n[UART] addr: 0x" << std::hex << addr
         //   << ", cmd: " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ")
@@ -250,7 +250,7 @@ struct Qemu32UART : public sc_core::sc_module {
 			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 			uint32_t ret;
-			char value = *ptr;
+			// char value = *ptr;
 
 			switch (addr) {
 				case RHR:  // Read from RBR or DLL

@@ -4,6 +4,15 @@
 
 namespace rv32 {
 
+/*spandan-------------*/
+//CHERI capability
+struct Capability {
+	uint32_t addr;
+	uint32_t caps;
+	bool tag;
+};
+/*spandan-------------*/
+
 struct instr_memory_if {
 	virtual ~instr_memory_if() {}
 
@@ -14,13 +23,17 @@ struct instr_memory_if {
 struct data_memory_if {
 	virtual ~data_memory_if() {}
 
-    virtual int64_t load_double(uint64_t addr) = 0;
+    virtual void reset_mem() = 0; //for TESTRIG
+	virtual int64_t load_double(uint64_t addr) = 0;
 	virtual int32_t load_word(uint64_t addr) = 0;
 	virtual int32_t load_half(uint64_t addr) = 0;
 	virtual int32_t load_byte(uint64_t addr) = 0;
 	virtual uint32_t load_uhalf(uint64_t addr) = 0;
 	virtual uint32_t load_ubyte(uint64_t addr) = 0;
+	virtual uint32_t load_tags(uint64_t addr) = 0; //spandan
+	virtual Capability load_capability(uint64_t addr) = 0; //spandan
 
+	virtual void store_capability(uint64_t addr, Capability cs) = 0; //spandan
     virtual void store_double(uint64_t addr, uint64_t value) = 0;
 	virtual void store_word(uint64_t addr, uint32_t value) = 0;
 	virtual void store_half(uint64_t addr, uint16_t value) = 0;

@@ -341,6 +341,159 @@ constexpr uint32_t FCVT_D_LU_ENCODING = 0b11010010001100000000000001010011;
 constexpr uint32_t FMV_D_X_MASK = 0b11111111111100000111000001111111;
 constexpr uint32_t FMV_D_X_ENCODING = 0b11110010000000000000000001010011;
 
+/*spandan------------------------------------------------------------------*/
+//CHERI extension
+//Capability inspection
+constexpr uint32_t CGETPERM_MASK = 0xfff0707f;
+constexpr uint32_t CGETPERM_ENCODING = 0xfe00005b;
+constexpr uint32_t CGETTYPE_MASK = 0xfff0707f;
+constexpr uint32_t CGETTYPE_ENCODING = 0xfe10005b;
+constexpr uint32_t CGETBASE_MASK = 0xfff0707f;
+constexpr uint32_t CGETBASE_ENCODING = 0xfe20005b;
+constexpr uint32_t CGETLEN_MASK = 0xfff0707f;
+constexpr uint32_t CGETLEN_ENCODING = 0xfe30005b;
+constexpr uint32_t CGETTAG_MASK = 0xfff0707f;
+constexpr uint32_t CGETTAG_ENCODING = 0xfe40005b;
+constexpr uint32_t CGETSEALED_MASK = 0xfff0707f;
+constexpr uint32_t CGETSEALED_ENCODING = 0xfe50005b;
+constexpr uint32_t CGETOFFSET_MASK = 0xfff0707f;
+constexpr uint32_t CGETOFFSET_ENCODING = 0xfe60005b;
+constexpr uint32_t CGETFLAGS_MASK = 0xfff0707f;
+constexpr uint32_t CGETFLAGS_ENCODING = 0xfe70005b;
+constexpr uint32_t CGETHIGH_MASK = 0xfff0707f;
+constexpr uint32_t CGETHIGH_ENCODING = 0xff70005b;
+constexpr uint32_t CGETTOP_MASK = 0xfff0707f;
+constexpr uint32_t CGETTOP_ENCODING = 0xff80005b;
+//Deprecated instructions
+constexpr uint32_t CGETADDR_MASK = 0xfff0707f;
+constexpr uint32_t CGETADDR_ENCODING = 0xfef0005b;
+
+//Capability modification
+constexpr uint32_t CSEAL_MASK = 0xfe00707f;
+constexpr uint32_t CSEAL_ENCODING = 0x1600005b;
+constexpr uint32_t CUNSEAL_MASK = 0xfe00707f;
+constexpr uint32_t CUNSEAL_ENCODING = 0x1800005b;
+constexpr uint32_t CANDPERM_MASK = 0xfe00707f;
+constexpr uint32_t CANDPERM_ENCODING = 0x1a00005b;
+constexpr uint32_t CSETFLAGS_MASK = 0xfe00707f;
+constexpr uint32_t CSETFLAGS_ENCODING = 0x1c00005b;
+constexpr uint32_t CSETOFFSET_MASK = 0xfe00707f;
+constexpr uint32_t CSETOFFSET_ENCODING = 0x1e00005b;
+constexpr uint32_t CSETADDR_MASK = 0xfe00707f;
+constexpr uint32_t CSETADDR_ENCODING = 0x2000005b;
+constexpr uint32_t CINCOFFSET_MASK = 0xfe00707f;
+constexpr uint32_t CINCOFFSET_ENCODING = 0x2200005b;
+constexpr uint32_t CINCOFFSETIMM_MASK = 0x707f;
+constexpr uint32_t CINCOFFSETIMM_ENCODING = 0x105b;
+constexpr uint32_t CSETBOUNDS_MASK = 0xfe00707f;
+constexpr uint32_t CSETBOUNDS_ENCODING = 0x1000005b;
+constexpr uint32_t CSETBOUNDSEXACT_MASK = 0xfe00707f;
+constexpr uint32_t CSETBOUNDSEXACT_ENCODING = 0x1200005b;
+constexpr uint32_t CSETBOUNDSIMM_MASK = 0x707f;
+constexpr uint32_t CSETBOUNDSIMM_ENCODING = 0x205b;
+constexpr uint32_t CSETHIGH_MASK = 0xfe00707f;
+constexpr uint32_t CSETHIGH_ENCODING = 0x2c00005b; 
+constexpr uint32_t CCLEARTAG_MASK = 0xfff0707f;
+constexpr uint32_t CCLEARTAG_ENCODING = 0xfeb0005b;
+constexpr uint32_t CBUILDCAP_MASK = 0xfe00707f;
+constexpr uint32_t CBUILDCAP_ENCODING = 0x3a00005b;
+constexpr uint32_t CCOPYTYPE_MASK = 0xfe00707f;
+constexpr uint32_t CCOPYTYPE_ENCODING = 0x3c00005b;
+constexpr uint32_t CCSEAL_MASK = 0xfe00707f;
+constexpr uint32_t CCSEAL_ENCODING = 0x3e00005b;
+constexpr uint32_t CSEALENTRY_MASK = 0xfff0707f;
+constexpr uint32_t CSEALENTRY_ENCODING = 0xff10005b;
+
+//Pointer arithmetic
+constexpr uint32_t CMOVE_MASK = 0xfff0707f;
+constexpr uint32_t CMOVE_ENCODING = 0xfea0005b;
+//Deprecated instructions
+constexpr uint32_t CFROMPTR_MASK = 0xfe00707f;
+constexpr uint32_t CFROMPTR_ENCODING = 0x2600005b;
+constexpr uint32_t CTOPTR_MASK = 0xfe00707f;
+constexpr uint32_t CTOPTR_ENCODING = 0x2400005b;
+constexpr uint32_t CSUB_MASK = 0xfe00707f;
+constexpr uint32_t CSUB_ENCODING = 0x2800005b;
+
+//Pointer comparison
+constexpr uint32_t CTESTSUBSET_MASK = 0xfe00707f;
+constexpr uint32_t CTESTSUBSET_ENCODING = 0x4000005b;
+constexpr uint32_t CSETEQUALEXACT_MASK = 0xfe00707f;
+constexpr uint32_t CSETEQUALEXACT_ENCODING = 0x4200005b;
+
+//Control flow
+constexpr uint32_t JALRCAP_MASK = 0xfff0707f;
+constexpr uint32_t JALRCAP_ENCODING = 0xfec0005b;
+constexpr uint32_t JALRPCC_MASK = 0xfff0707f;
+constexpr uint32_t JALRPCC_ENCODING = 0xff40005b;
+constexpr uint32_t CINVOKE_MASK = 0xfe007fff;
+constexpr uint32_t CINVOKE_ENCODING = 0xfc0000db;
+
+//SCR access
+constexpr uint32_t CSPECIALRW_MASK = 0xfe00707f;
+constexpr uint32_t CSPECIALRW_ENCODING = 0x200005b;
+
+//Fast register clearing
+constexpr uint32_t CCLEAR_MASK = 0xfff0707f;
+constexpr uint32_t CCLEAR_ENCODING = 0xfee0005b;
+
+//Compressed capability precision
+constexpr uint32_t CROUNDREPLEN_MASK = 0xfff0707f;
+constexpr uint32_t CROUNDREPLEN_ENCODING = 0xfe80005b;
+constexpr uint32_t CREPALIGNMASK_MASK = 0xfff0707f;
+constexpr uint32_t CREPALIGNMASK_ENCODING = 0xfe90005b;
+
+//Tag-memory access
+constexpr uint32_t CLOADTAGS_MASK = 0xfff0707f;
+constexpr uint32_t CLOADTAGS_ENCODING = 0xff20005b;
+
+//Capability mode: Original RISC-V instructions are modified like JAL -> CJAL
+
+//Load
+constexpr uint32_t LBCAP_MASK = 0xfff0707f;
+constexpr uint32_t LBCAP_ENCODING = 0xfa80005b;
+constexpr uint32_t LHCAP_MASK = 0xfff0707f;
+constexpr uint32_t LHCAP_ENCODING = 0xfa90005b;
+constexpr uint32_t LWCAP_MASK = 0xfff0707f;
+constexpr uint32_t LWCAP_ENCODING = 0xfaa0005b;
+constexpr uint32_t LBUCAP_MASK = 0xfff0707f;
+constexpr uint32_t LBUCAP_ENCODING = 0xfac0005b;
+constexpr uint32_t LHUCAP_MASK = 0xfff0707f;
+constexpr uint32_t LHUCAP_ENCODING = 0xfad0005b;
+constexpr uint32_t LBDDC_MASK = 0xfff0707f;
+constexpr uint32_t LBDDC_ENCODING = 0xfa00005b;
+constexpr uint32_t LHDDC_MASK = 0xfff0707f;
+constexpr uint32_t LHDDC_ENCODING = 0xfa10005b;
+constexpr uint32_t LWDDC_MASK = 0xfff0707f;
+constexpr uint32_t LWDDC_ENCODING = 0xfa20005b;
+constexpr uint32_t LBUDDC_MASK = 0xfff0707f;
+constexpr uint32_t LBUDDC_ENCODING = 0xfa40005b;
+constexpr uint32_t LHUDDC_MASK = 0xfff0707f;
+constexpr uint32_t LHUDDC_ENCODING = 0xfa50005b;
+constexpr uint32_t LCCAP_MASK = 0xfff0707f;
+constexpr uint32_t LCCAP_ENCODING = 0xfab0005b;
+constexpr uint32_t LCDDC_MASK = 0xfff0707f;
+constexpr uint32_t LCDDC_ENCODING = 0xfa30005b;
+
+//Store
+constexpr uint32_t SBCAP_MASK = 0xfe007fff;
+constexpr uint32_t SBCAP_ENCODING = 0xf800045b;
+constexpr uint32_t SHCAP_MASK = 0xfe007fff;
+constexpr uint32_t SHCAP_ENCODING = 0xf80004db;
+constexpr uint32_t SWCAP_MASK = 0xfe007fff;
+constexpr uint32_t SWCAP_ENCODING = 0xf800055b;
+constexpr uint32_t SBDDC_MASK = 0xfe007fff;
+constexpr uint32_t SBDDC_ENCODING = 0xf800005b;
+constexpr uint32_t SHDDC_MASK = 0xfe007fff;
+constexpr uint32_t SHDDC_ENCODING = 0xf80000db;
+constexpr uint32_t SWDDC_MASK = 0xfe007fff;
+constexpr uint32_t SWDDC_ENCODING = 0xf800015b;
+constexpr uint32_t SCCAP_MASK = 0xfe007fff;
+constexpr uint32_t SCCAP_ENCODING = 0xf80005db;
+constexpr uint32_t SCDDC_MASK = 0xfe007fff;
+constexpr uint32_t SCDDC_ENCODING = 0xf80001db;
+/*spandan------------------------------------------------------------------*/
+
 #define MATCH_AND_RETURN_INSTR2(instr, result)                     \
 	if (unlikely((data() & (instr##_MASK)) != (instr##_ENCODING))) \
 		return UNDEF;                                              \
@@ -612,6 +765,95 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "MRET",
     "WFI",
     "SFENCE_VMA",
+
+/*spandan-----------------------------------------------------*/
+	// CHERI instructions
+	//Capability inspection
+	"CGETPERM",
+	"CGETTYPE",
+	"CGETBASE",
+	"CGETLEN",
+	"CGETTAG",
+	"CGETSEALED",
+	"CGETOFFSET",
+	"CGETFLAGS",
+	"CGETHIGH",
+	"CGETTOP",
+
+	//Capability modification
+	"CSEAL",
+	"CUNSEAL",
+	"CANDPERM",
+	"CSETFLAGS",
+	"CSETOFFSET",
+	"CSETADDR",
+	"CINCOFFSET",
+	"CINCOFFSETIMM",
+	"CSETBOUNDS",
+	"CSETBOUNDSEXACT",
+	"CSETBOUNDSIMM",
+	"CSETHIGH",
+	"CCLEARTAG",
+	"CBUILDCAP",
+	"CCOPYTYPE",
+	"CCSEAL",
+	"CSEALENTRY",
+
+	//Pointer arithmetic
+	"CMOVE",
+
+	//Pointer comparison
+	"CTESTSUBSET",
+	"CSETEQUALEXACT",
+
+	//Control flow
+	"JALRCAP",
+	"JALRPCC",
+	"CINVOKE",
+
+	//SCR access
+	"CSPECIALRW",
+
+	//Fast register clear
+	"CCLEAR",
+
+	//Compressed capability precision
+	"CROUNDREPLEN",
+	"CREPALIGNMASK",
+
+	//Tag-memory access
+	"CLOADTAGS",
+
+	//Load
+	"LBCAP",
+	"LHCAP",
+	"LWCAP",
+	"LBUCAP",
+	"LHUCAP",
+	"LBDDC",
+	"LHDDC",
+	"LWDDC",
+	"LBUDDC",
+	"LHUDDC",
+	"LCCAP",
+	"LCDDC",
+
+	//Store
+	"SBCAP",
+	"SHCAP",
+	"SWCAP",
+	"SBDDC",
+	"SHDDC",
+	"SWDDC",
+	"SCCAP",
+	"SCDDC",
+
+	//Deprecated instructions
+	"CGETADDR",
+	"CFROMPTR",
+	"CTOPTR",
+	"CSUB",
+/*spandan-----------------------------------------------------*/
 };
 
 Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
@@ -719,6 +961,69 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FCVT_D_L:
 		case FCVT_D_LU:
 		case FMV_D_X:
+		/*spandan---------------------------------------------*/
+		case CGETPERM:
+		case CGETTYPE:
+		case CGETBASE:
+		case CGETLEN:
+		case CGETTAG:
+		case CGETSEALED:
+		case CGETOFFSET:
+		case CGETFLAGS:
+		case CGETHIGH:
+		case CGETTOP:
+		case CSEAL:
+		case CUNSEAL:
+		case CANDPERM:
+		case CSETFLAGS:
+		case CSETOFFSET:
+		case CSETADDR:
+		case CINCOFFSET:
+		case CSETBOUNDS:
+		case CSETBOUNDSEXACT:
+		case CSETHIGH:
+		case CCLEARTAG:
+		case CBUILDCAP:
+		case CCOPYTYPE:
+		case CCSEAL:
+		case CSEALENTRY:
+		case CMOVE:
+		case CTESTSUBSET:
+		case CSETEQUALEXACT:
+		case JALRCAP:
+		case JALRPCC:
+		case CINVOKE:
+		case CSPECIALRW:
+		case CCLEAR:
+		case CROUNDREPLEN:
+		case CREPALIGNMASK:
+		case CLOADTAGS:
+		case LBCAP:
+		case LHCAP:
+		case LWCAP:
+		case LBUCAP:
+		case LHUCAP:
+		case LBDDC:
+		case LHDDC:
+		case LWDDC:
+		case LBUDDC:
+		case LHUDDC:
+		case LCCAP:
+		case LCDDC:
+		case SBCAP:
+		case SHCAP:
+		case SWCAP:
+		case SBDDC:
+		case SHDDC:
+		case SWDDC:
+		case SCCAP:
+		case SCDDC:
+		//Deprecated instructions
+		case CGETADDR:
+		case CFROMPTR:
+		case CTOPTR:
+		case CSUB:
+		/*spandan---------------------------------------------*/
 			return Type::R;
 		case JALR:
 		case LB:
@@ -740,6 +1045,10 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case SRAIW:
 		case FLW:
 		case FLD:
+		/*spandan----------------------------------------------*/
+		case CINCOFFSETIMM:
+		case CSETBOUNDSIMM:
+		/*spandan----------------------------------------------*/
 			return Type::I;
 		case SB:
 		case SH:
@@ -858,6 +1167,260 @@ struct InstructionFactory {
 	static T SUB(unsigned rd, unsigned rs1, unsigned rs2) {
 		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (0 << 12) | (32 << 25));
 	}
+
+/*spandan---------------------------------------------------------------------------------------------------------*/
+	static T CGETPERM(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x0) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETTYPE(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x1) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETBASE(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x2) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETLEN(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x3) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETTAG(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x4) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETSEALED(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x5) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETOFFSET(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x6) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETFLAGS(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x7) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETHIGH(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x17) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CGETTOP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x18) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	// Deprecated instruction-----------------------------------------------------------------------------------
+	static T CGETADDR(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0xf) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+	// Deprecated instruction-----------------------------------------------------------------------------------
+
+	static T CSEAL(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0xb) << 25));
+	}
+
+	static T CUNSEAL(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0xc) << 25));
+	}
+
+	static T CANDPERM(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0xd) << 25));
+	}
+
+	static T CSETFLAGS(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0xe) << 25));
+	}
+
+	static T CSETOFFSET(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0xf) << 25));
+	}
+
+	static T CSETADDR(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x10) << 25));
+	}
+
+	static T CINCOFFSET(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x11) << 25));
+	}
+
+	static T CINCOFFSETIMM(unsigned cd, unsigned cs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | 91 | ((0x1) << 12));
+	}
+
+	static T CSETBOUNDS(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x8) << 25));
+	}
+
+	static T CSETBOUNDSEXACT(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x9) << 25));
+	}
+
+	static T CSETBOUNDSIMM(unsigned cd, unsigned cs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | 91 | ((0x2) << 12));
+	}
+
+	static T CSETHIGH(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x16) << 25));
+	}
+
+	static T CCLEARTAG(unsigned cd, unsigned cs1) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0xb) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CBUILDCAP(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x1d) << 25));
+	}
+
+	static T CCOPYTYPE(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x1e) << 25));
+	}
+
+	static T CCSEAL(unsigned cd, unsigned cs1, unsigned cs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x1f) << 25));
+	}
+
+	static T CSEALENTRY(unsigned cd, unsigned cs1) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x11) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	static T CMOVE(unsigned cd, unsigned cs1) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0xa) << 20) | 91 | (0 << 12) | (127 << 25));
+	}
+
+	// Deprecated instruction-----------------------------------------------------------------------------------
+	static T CFROMPTR(unsigned cd, unsigned cs1, unsigned rs2) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x13) << 25));
+	}
+
+	static T CTOPTR(unsigned rd, unsigned cs1, unsigned cs2) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x12) << 25));
+	}
+
+	static T CSUB(unsigned rd, unsigned cs1, unsigned cs2) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x14) << 25));
+	}
+	// Deprecated instruction-----------------------------------------------------------------------------------
+
+	static T CTESTSUBSET(unsigned rd, unsigned cs1, unsigned cs2) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x20) << 25));
+	}
+
+	static T CSETEQUALEXACT(unsigned rd, unsigned cs1, unsigned cs2) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x21) << 25));
+	}
+
+	static T JALRCAP(unsigned cd, unsigned cs1) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0xc) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T JALRPCC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x14) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T CINVOKE(unsigned cs1, unsigned cs2) {
+		return T((0x1 << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7e) << 25));
+	}
+
+	static T CSPECIALRW(unsigned cd, unsigned cs1, unsigned scr) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((scr & 0x1f) << 20) | 91 | (0 << 12) | ((0x1) << 25));
+	}
+
+	static T CCLEAR(unsigned q, unsigned m_upper, unsigned m_lower) {
+		return T(((m_lower & 0x1f) << 7) | ((m_upper & 0x7) << 15) | ((q & 0x3) << 18) | ((0xe) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T CROUNDREPLEN(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x8) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T CREPALIGNMASK(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x9) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T CLOADTAGS(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x12) << 20) | 91 | (0 << 12) | ((0x7f) << 25));
+	}
+
+	static T LBCAP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x08) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LHCAP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x09) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LWCAP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x0a) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LBUCAP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x0c) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LHUCAP(unsigned rd, unsigned cs1) {
+		return T(((rd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x0d) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LBDDC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x00) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LHDDC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x01) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LWDDC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x02) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LBUDDC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x04) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LHUDDC(unsigned rd, unsigned rs1) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x05) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LCCAP(unsigned cd, unsigned cs1) {
+		return T(((cd & 0x1f) << 7) | ((cs1 & 0x1f) << 15) | ((0x0b) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T LCDDC(unsigned cd, unsigned rs1) {
+		return T(((cd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((0x03) << 20) | 91 | (0 << 12) | ((0x7d) << 25));
+	}
+
+	static T SBCAP(unsigned rs2, unsigned cs1) {
+		return T((0x08 << 7) | ((cs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SHCAP(unsigned rs2, unsigned cs1) {
+		return T((0x09 << 7) | ((cs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SWCAP(unsigned rs2, unsigned cs1) {
+		return T((0x0a << 7) | ((cs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SBDDC(unsigned rs2, unsigned rs1) {
+		return T((0x00 << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SHDDC(unsigned rs2, unsigned rs1) {
+		return T((0x01 << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SWDDC(unsigned rs2, unsigned rs1) {
+		return T((0x02 << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SCCAP(unsigned cs2, unsigned cs1) {
+		return T((0x0b << 7) | ((cs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+
+	static T SCDDC(unsigned cs2, unsigned rs1) {
+		return T((0x03 << 7) | ((rs1 & 0x1f) << 15) | ((cs2 & 0x1f) << 20) | 91 | (0 << 12) | ((0x7c) << 25));
+	}
+/*spandan---------------------------------------------------------------------------------------------------------*/
 
 	static T LW(unsigned rd, unsigned rs1, int I_imm) {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 3 | (2 << 12));
@@ -1359,6 +1922,180 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 	Instruction &instr = *this;
 
 	switch (instr.opcode()) {
+		/*spandan---------------------------------*/
+		case OP_CHERI: {
+			switch (instr.funct3()) {
+				case F3_INCOFFSETIMM:
+					MATCH_AND_RETURN_INSTR(CINCOFFSETIMM);
+
+				case F3_SETBOUNDSIMM:
+					MATCH_AND_RETURN_INSTR(CSETBOUNDSIMM);
+
+				case F3_INSPECT:
+					switch (instr.funct7()) {
+						case F7_LDC:
+							switch (instr.inspect2()) {
+								case RS2_LBC:
+									MATCH_AND_RETURN_INSTR(LBCAP);
+								case RS2_LHC:
+									MATCH_AND_RETURN_INSTR(LHCAP);
+								case RS2_LWC:
+									MATCH_AND_RETURN_INSTR(LWCAP);
+								case RS2_LBUC:
+									MATCH_AND_RETURN_INSTR(LBUCAP);
+								case RS2_LHUC:
+									MATCH_AND_RETURN_INSTR(LHUCAP);
+								case RS2_LBDDC:
+									MATCH_AND_RETURN_INSTR(LBDDC);
+								case RS2_LHDDC:
+									MATCH_AND_RETURN_INSTR(LHDDC);
+								case RS2_LWDDC:
+									MATCH_AND_RETURN_INSTR(LWDDC);
+								case RS2_LBUDDC:
+									MATCH_AND_RETURN_INSTR(LBUDDC);
+								case RS2_LHUDDC:
+									MATCH_AND_RETURN_INSTR(LHUDDC);
+								case RS2_LCCAP:
+									MATCH_AND_RETURN_INSTR(LCCAP);
+								case RS2_LCDDC:
+									MATCH_AND_RETURN_INSTR(LCDDC);
+							}
+							break;
+
+						case F7_SDC:
+							switch (instr.inspectd()) {
+								case RD_SBC:
+									MATCH_AND_RETURN_INSTR(SBCAP);
+								case RD_SHC:
+									MATCH_AND_RETURN_INSTR(SHCAP);
+								case RD_SWC:
+									MATCH_AND_RETURN_INSTR(SWCAP);
+								case RD_SBDDC:
+									MATCH_AND_RETURN_INSTR(SBDDC);
+								case RD_SHDDC:
+									MATCH_AND_RETURN_INSTR(SHDDC);
+								case RD_SWDDC:
+									MATCH_AND_RETURN_INSTR(SWDDC);
+								case RD_SCCAP:
+									MATCH_AND_RETURN_INSTR(SCCAP);
+								case RD_SCDDC:
+									MATCH_AND_RETURN_INSTR(SCDDC);
+							}
+							break;
+
+						case F7_INSPECT:
+							switch (instr.inspect2()) {
+								case RS2_CGETPERM:
+									MATCH_AND_RETURN_INSTR(CGETPERM);
+								case RS2_CGETTYPE:
+									MATCH_AND_RETURN_INSTR(CGETTYPE);
+								case RS2_CGETBASE:
+									MATCH_AND_RETURN_INSTR(CGETBASE);
+								case RS2_CGETTOP:
+									MATCH_AND_RETURN_INSTR(CGETTOP);
+								case RS2_CGETLEN:
+									MATCH_AND_RETURN_INSTR(CGETLEN);
+								case RS2_CGETTAG:
+									MATCH_AND_RETURN_INSTR(CGETTAG);
+								case RS2_CGETSEALED:
+									MATCH_AND_RETURN_INSTR(CGETSEALED);
+								case RS2_CGETOFFSET:
+									MATCH_AND_RETURN_INSTR(CGETOFFSET);
+								case RS2_CGETFLAGS:
+									MATCH_AND_RETURN_INSTR(CGETFLAGS);
+								case RS2_CGETHIGH:
+									MATCH_AND_RETURN_INSTR(CGETHIGH);
+								case RS2_CLEARTAG:
+									MATCH_AND_RETURN_INSTR(CCLEARTAG);
+								case RS2_SEALENTRY:
+									MATCH_AND_RETURN_INSTR(CSEALENTRY);
+								case RS2_MOVE:
+									MATCH_AND_RETURN_INSTR(CMOVE);
+								case RS2_JALRCAP:
+									MATCH_AND_RETURN_INSTR(JALRCAP);
+								case RS2_JALRPCC:
+									MATCH_AND_RETURN_INSTR(JALRPCC);
+								case RS2_CLEAR:
+									MATCH_AND_RETURN_INSTR(CCLEAR);
+								case RS2_RRL:
+									MATCH_AND_RETURN_INSTR(CROUNDREPLEN);
+								case RS2_RAM:
+									MATCH_AND_RETURN_INSTR(CREPALIGNMASK);
+								case RS2_LOADTAGS:
+									MATCH_AND_RETURN_INSTR(CLOADTAGS);
+								case RS2_CGETADDR: // Deprecated instruction
+									MATCH_AND_RETURN_INSTR(CGETADDR);
+							}
+							break;
+						
+						case F7_INVOKE:
+							switch (instr.inspectd()) {
+								case RD_INVOKE:
+									MATCH_AND_RETURN_INSTR(CINVOKE);
+							}
+							break;
+
+						case F7_SPECIALRW:
+							MATCH_AND_RETURN_INSTR(CSPECIALRW);
+						
+						case F7_SEAL:
+							MATCH_AND_RETURN_INSTR(CSEAL);
+
+						case F7_UNSEAL:
+							MATCH_AND_RETURN_INSTR(CUNSEAL);
+
+						case F7_ANDPERM:
+							MATCH_AND_RETURN_INSTR(CANDPERM);
+						
+						case F7_SETFLAGS:
+							MATCH_AND_RETURN_INSTR(CSETFLAGS);
+
+						case F7_SETOFFSET:
+							MATCH_AND_RETURN_INSTR(CSETOFFSET);
+
+						case F7_SETADDR:
+							MATCH_AND_RETURN_INSTR(CSETADDR);
+
+						case F7_INCOFFSET:
+							MATCH_AND_RETURN_INSTR(CINCOFFSET);
+
+						case F7_SETBOUNDS:
+							MATCH_AND_RETURN_INSTR(CSETBOUNDS);
+
+						case F7_SETBOUNDSEXACT:
+							MATCH_AND_RETURN_INSTR(CSETBOUNDSEXACT);
+
+						case F7_SETHIGH:
+							MATCH_AND_RETURN_INSTR(CSETHIGH);
+
+						case F7_BUILDCAP:
+							MATCH_AND_RETURN_INSTR(CBUILDCAP);
+
+						case F7_COPYTYPE:
+							MATCH_AND_RETURN_INSTR(CCOPYTYPE);
+
+						case F7_CSEAL:
+							MATCH_AND_RETURN_INSTR(CCSEAL);
+
+						case F7_TESTSUBSET:
+							MATCH_AND_RETURN_INSTR(CTESTSUBSET);
+
+						case F7_SETEQUALEXACT:
+							MATCH_AND_RETURN_INSTR(CSETEQUALEXACT);
+// Deprecated instructions
+						case F7_CFROMPTR:
+							MATCH_AND_RETURN_INSTR(CFROMPTR);
+						case F7_CTOPTR:
+							MATCH_AND_RETURN_INSTR(CTOPTR);
+						case F7_CSUB:
+							MATCH_AND_RETURN_INSTR(CSUB);
+					}
+					break;
+			}
+			break;
+		}
+		/*spandan---------------------------------*/
+
 		case OP_LUI:
 			MATCH_AND_RETURN_INSTR(LUI);
 

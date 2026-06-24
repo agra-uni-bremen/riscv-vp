@@ -29,6 +29,8 @@
 #include <iomanip>
 #include <iostream>
 
+// #include "core/rv32/rvfi-dii/rvfi_dii.h"
+
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -44,8 +46,10 @@ public:
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
+	addr_t tag_space = mem_size/(8*BYTES_PER_TAG); //spandan : space for CHERI tags
+	addr_t usable_mem_size = mem_size - tag_space; //spandan : tag space should not be accessible
 	addr_t mem_start_addr = 0x00000000;
-	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
+	addr_t mem_end_addr = mem_start_addr + usable_mem_size - 1; //spandan
 	addr_t clint_start_addr = 0x02000000;
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
@@ -104,7 +108,9 @@ public:
 		Options::parse(argc, argv);
 
 		entry_point.finalize(parse_ulong_option);
-		mem_end_addr = mem_start_addr + mem_size - 1;
+		tag_space = mem_size/(8*BYTES_PER_TAG); //spandan
+		usable_mem_size = mem_size - tag_space; //spandan
+		mem_end_addr = mem_start_addr + usable_mem_size - 1; //spandan
 		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
 		       "RAM too big, would overlap memory");
 		mram_end_addr = mram_start_addr + mram_size - 1;
@@ -141,7 +147,7 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, opt.mem_size);
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -149,7 +155,7 @@ int sc_main(int argc, char **argv) {
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi)
+	if (opt.use_instr_dmi) 
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
 		iss_mem_if.dmi_ranges.emplace_back(dmi);
@@ -159,7 +165,8 @@ int sc_main(int argc, char **argv) {
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
 	try {
-		loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+		loader.load_executable_image(mem, opt.usable_mem_size, opt.mem_start_addr); //spandan : Max size of ELF file
+																					//should be less than mem.size
 	} catch(ELFLoader::load_executable_exception& e) {
 		std::cerr << e.what() << std::endl;
 		std::cerr << "Memory map: " << std::endl;
@@ -172,6 +179,7 @@ int sc_main(int argc, char **argv) {
 	 * https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 	 */
 	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+	// For verification by TestRIG, syscall handler not required
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
@@ -235,7 +243,13 @@ int sc_main(int argc, char **argv) {
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
 
+	//core.instr_dmi = opt.use_instr_dmi; //spandan: Let core know where to fetch instruction from
 	core.trace = opt.trace_mode;  // switch for printing instructions
+	/*spandan: set rvfi_dii_interface_t for core---------------------*/
+	// auto rvfi_dii = std::make_shared<rvfi_dii_interface_t>(5431);
+	// rvfi_dii->init();
+	// core.set_rvfi_dii(rvfi_dii);
+	/*spandan--------------------------------------------------------*/
 	if (opt.use_debug_runner) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);

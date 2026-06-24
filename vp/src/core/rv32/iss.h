@@ -28,12 +28,40 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
+// #include "rvfi-dii/rvfi_dii.h"
+
+#if defined(NOTAGROOT)
+#define BYTES_PER_TAG 8
+// #define TAG_BITS_PER_ROOT 128
+#endif
+
+
 namespace rv32 {
+
+/*spandan---------------------------------------------------------*/
+//Set bounds return
+struct SetBound_Ret {
+	Capability cd;
+	bool exact;
+	uint32_t newlen;
+	uint32_t baseMask;
+};
+
+//Set bounds flags
+struct SetBound_flag {
+	bool len;
+	bool mask;
+};
+/*spandan---------------------------------------------------------*/
 
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;
 
 	int32_t regs[NUM_REGS];
+
+	uint32_t cheri[NUM_REGS]; //spandan
+
+	uint32_t tags; //spandan
 
 	RegFile();
 
@@ -161,6 +189,21 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	FpRegs fp_regs;
 	uint32_t pc = 0;
 	uint32_t last_pc = 0;
+//spandan---------------------------------------------
+	uint32_t cpc = INF_CAP; 
+	bool pc_tag = true;
+	
+	uint32_t pre_ddc = 0;
+	uint32_t cpre_ddc = INF_CAP;
+	bool pre_ddc_tag = true;
+//spandan---------------------------------------------
+
+//spandan: TestRIG related registers------------------
+	// std::shared_ptr<rvfi_dii_interface_t> rvfi_dii;
+	// void set_rvfi_dii(std::shared_ptr<rvfi_dii_interface_t> iface);
+	// rvfi_dii_command_t rvfi_dii_input = {};
+    // rvfi_dii_trace_t rvfi_dii_output = {};
+//spandan---------------------------------------------
 	bool trace = false;
 	bool shall_exit = false;
     bool ignore_wfi = false;
@@ -217,6 +260,33 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         return RV32;
     }
 
+	/*spandan------------------------------------------------------------*/
+	//CHERI
+	uint32_t get_base(uint32_t addr, uint32_t caps);
+	int64_t get_top(uint32_t addr, uint32_t caps);
+	uint32_t get_len(uint32_t addr, uint32_t caps);
+	uint32_t replace_bits(uint32_t source, uint8_t from, uint8_t to, uint32_t replacement);
+	bool set_offset(Capability cs1, int64_t rs2, bool setoffset);
+	Capability seal_cap(Capability cs1, Capability cs2);
+	Capability unseal_cap(Capability cs1, Capability cs2);
+	bool cap_inbounds(Capability cs);
+	SetBound_Ret set_bounds(Capability cs, uint64_t len, SetBound_flag choice);
+	Capability build_cap(Capability cs1, Capability cs2);
+	Capability legalize_epcc(Capability cs);
+	Capability legalize_tcc(Capability tcc, Capability cs);
+	Capability get_scr(uint8_t scr);
+	bool set_scr(uint8_t scr, Capability cs);
+	void check_jalr_exceptions(uint32_t regnum, Capability cs1, int32_t imm);
+	void check_jal_exceptions(uint32_t regnum, Capability cd, int32_t imm);
+	void check_ltags_exceptions(uint32_t regnum, Capability cs1);
+	void check_fetch_exceptions(uint32_t regnum, Capability cs);
+	void check_clc_exceptions(uint32_t regnum, Capability cs1, int64_t imm);
+	void check_dataload_exceptions(uint32_t regnum, Capability cs1, uint8_t size, int64_t imm);
+	void check_datastore_exceptions(uint32_t regnum, Capability cs1, uint8_t size, int64_t imm);
+	void check_csc_exceptions(uint32_t regnum1, uint32_t regnum2, Capability cs1, Capability cs2, int64_t imm);
+	void check_invoke_exceptions(uint32_t regnum1, uint32_t regnum2, Capability cs1, Capability cs2);
+	/*spandan------------------------------------------------------------*/
+
     uint64_t get_progam_counter(void) override;
     void enable_debug(void) override;
     CoreExecStatus get_status(void) override;
@@ -225,6 +295,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
     void insert_breakpoint(uint64_t) override;
     void remove_breakpoint(uint64_t) override;
+	void reset_core(); //spandan
 
 	uint64_t get_hart_id() override;
 
@@ -266,6 +337,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	template <unsigned Alignment, bool isLoad>
 	inline void trap_check_addr_alignment(uint32_t addr) {
 		if (unlikely(addr % Alignment)) {
+#if defined(NOTAGROOT)
+			std::cout << "[ISS] Warn: Address misaligned" << std::endl;
+#endif
 			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
 		}
 	}

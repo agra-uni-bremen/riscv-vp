@@ -228,6 +228,82 @@ enum Parts {
 	// reserved opcodes for custom instructions
 	OP_CUST1 = 0b0101011,
 	OP_CUST0 = 0b0001011,
+
+/*spandan-----------------------------------------*/	
+	//reserved opcodes for CHERI
+	OP_CHERI = 0b1011011,
+	F3_INSPECT = 0b000,
+	F7_INSPECT = 0b1111111,
+	F7_INVOKE = 0x7e,
+	F7_SPECIALRW = 0x1,
+	F7_LDC = 0x7d,
+	F7_SDC = 0x7c,
+
+	RS2_CGETPERM = 0x0,
+	RS2_CGETTYPE = 0x1,
+	RS2_CGETBASE = 0x2,
+	RS2_CGETLEN = 0x3,
+	RS2_CGETTAG = 0x4,
+	RS2_CGETSEALED = 0x5,
+	RS2_CGETOFFSET = 0x6,
+	RS2_CGETFLAGS = 0x7,
+	RS2_CGETHIGH = 0x17,
+	RS2_CGETTOP = 0x18,
+	RS2_CGETADDR = 0xf, //deprecated
+	RS2_CLEARTAG = 0xb,
+	RS2_SEALENTRY = 0x11,
+	RS2_MOVE = 0xa,
+	RS2_JALRCAP = 0xc,
+	RS2_JALRPCC = 0x14,
+	RS2_CLEAR = 0xe,
+	RS2_RRL = 0x8,
+	RS2_RAM = 0x9,
+	RS2_LOADTAGS = 0x12,
+	RD_INVOKE = 0x1,
+
+	RS2_LBC = 0x08,
+	RS2_LHC = 0x09,
+	RS2_LWC = 0x0a,
+	RS2_LBUC = 0x0c,
+	RS2_LHUC = 0x0d,
+	RS2_LBDDC = 0x00,
+	RS2_LHDDC = 0x01,
+	RS2_LWDDC = 0x02,
+	RS2_LBUDDC = 0x04,
+	RS2_LHUDDC = 0x05,
+	RS2_LCCAP = 0x0b,
+	RS2_LCDDC = 0x03,
+
+	RD_SBC = 0x08,
+	RD_SHC = 0x09,
+	RD_SWC = 0x0a,
+	RD_SBDDC = 0x00,
+	RD_SHDDC = 0x01,
+	RD_SWDDC = 0x02,
+	RD_SCCAP = 0x0b,
+	RD_SCDDC = 0x03,
+
+	F7_SEAL = 0xb,
+	F7_UNSEAL = 0xc,
+	F7_ANDPERM = 0xd,
+	F7_SETFLAGS = 0xe,
+	F7_SETOFFSET = 0xf,
+	F7_SETADDR = 0x10,
+	F7_INCOFFSET = 0x11,
+	F3_INCOFFSETIMM = 0x1,
+	F7_SETBOUNDS = 0x8,
+	F7_SETBOUNDSEXACT = 0x9,
+	F3_SETBOUNDSIMM = 0x2,
+	F7_SETHIGH = 0x16,
+	F7_BUILDCAP = 0x1d,
+	F7_COPYTYPE = 0x1e,
+	F7_CSEAL = 0x1f,
+	F7_TESTSUBSET = 0x20,
+	F7_SETEQUALEXACT = 0x21,
+	F7_CFROMPTR = 0x13, //deprecated
+	F7_CTOPTR = 0x12, //deprecated
+	F7_CSUB = 0x14, //deprecated
+/*spandan-----------------------------------------*/
 };
 
 // each instruction is mapped by the decoder to the following mapping
@@ -421,6 +497,73 @@ enum Mapping {
 	WFI,
 	SFENCE_VMA,
 
+/*spandan-----------------------------*/
+	//CHERI instructions
+	CGETPERM,
+	CGETTYPE,
+	CGETBASE,
+	CGETLEN,
+	CGETTAG,
+	CGETSEALED,
+	CGETOFFSET,
+	CGETFLAGS,
+	CGETHIGH,
+	CGETTOP,
+	CSEAL,
+	CUNSEAL,
+	CANDPERM,
+	CSETFLAGS,
+	CSETOFFSET,
+	CSETADDR,
+	CINCOFFSET,
+	CINCOFFSETIMM,
+	CSETBOUNDS,
+	CSETBOUNDSEXACT,
+	CSETBOUNDSIMM,
+	CSETHIGH,
+	CCLEARTAG,
+	CBUILDCAP,
+	CCOPYTYPE,
+	CCSEAL,
+	CSEALENTRY,
+	CMOVE,
+	CTESTSUBSET,
+	CSETEQUALEXACT,
+	JALRCAP,
+	JALRPCC,
+	CINVOKE,
+	CSPECIALRW,
+	CCLEAR,
+	CROUNDREPLEN,
+	CREPALIGNMASK,
+	CLOADTAGS,
+	LBCAP,
+	LHCAP,
+	LWCAP,
+	LBUCAP,
+	LHUCAP,
+	LBDDC,
+	LHDDC,
+	LWDDC,
+	LBUDDC,
+	LHUDDC,
+	LCCAP,
+	LCDDC,
+	SBCAP,
+	SHCAP,
+	SWCAP,
+	SBDDC,
+	SHDDC,
+	SWDDC,
+	SCCAP,
+	SCDDC,
+//Deprecated instructions
+	CGETADDR,
+	CFROMPTR,
+	CTOPTR,
+	CSUB,
+/*spandan-----------------------------*/
+
 	NUMBER_OF_INSTRUCTIONS
 };
 
@@ -442,12 +585,22 @@ extern std::array<const char*, 32> regnamePrettyStr;
 Type getType(Mapping mapping);
 }  // namespace Opcode
 
+/*spandan--------------------------------------*/
+#define TOP_TWO(top) ((top >> 31) & 0x3)
+/*spandan--------------------------------------*/
 #define BIT_RANGE(instr, upper, lower) (instr & (((1 << (upper - lower + 1)) - 1) << lower))
 #define BIT_SLICE(instr, upper, lower) (BIT_RANGE(instr, upper, lower) >> lower)
 #define BIT_SINGLE(instr, pos) (instr & (1 << pos))
 #define BIT_SINGLE_P1(instr, pos) (BIT_SINGLE(instr, pos) >> pos)
 #define BIT_SINGLE_PN(instr, pos, new_pos) ((BIT_SINGLE(instr, pos) >> pos) << new_pos)
 #define EXTRACT_SIGN_BIT(instr, pos, new_pos) ((BIT_SINGLE_P1(instr, pos) << 31) >> (31 - new_pos))
+/*spandan--------------------------------------------------------*/
+//By bitwise and, replaces start to end bits by 0
+#define REPLACEMENT_MASK(start, end) (~(((0b1 << (end - start + 1)) - 1) << start))
+//Set or unset pos bit of instr
+#define SET_BIT(instr, pos) (instr | (1 << pos))
+#define UNSET_BIT(instr, pos) (instr & (~(1 << pos)))
+/*spandan--------------------------------------------------------*/
 
 struct Instruction {
 	Instruction() : instr(0) {}
@@ -535,6 +688,28 @@ struct Instruction {
 		return (BIT_RANGE(instr, 14, 12) >> 12);
 	}
 
+/*spandan-----------------------------------------------*/
+	inline int32_t inspect2() {
+		return (BIT_RANGE(instr, 24, 20) >> 20);
+	}
+
+	inline int32_t inspectd() {
+		return (BIT_RANGE(instr, 11, 7) >> 7);
+	}
+
+	inline uint8_t q() {
+		return (BIT_SLICE(instr, 19, 18));
+	}
+
+	inline uint8_t m_upper() {
+		return (BIT_SLICE(instr, 17, 15));
+	}
+
+	inline uint8_t m_lower() {
+		return (BIT_SLICE(instr, 11, 7));
+	}
+/*spandan-----------------------------------------------*/
+
 	inline int32_t funct12() {
 		// cast to unsigned to avoid sign extension when shifting
 		return (BIT_RANGE((uint32_t)instr, 31, 20) >> 20);
@@ -591,6 +766,13 @@ struct Instruction {
 	inline int32_t I_imm() {
 		return BIT_RANGE(instr, 31, 20) >> 20;
 	}
+
+/*spandan--------------------------------------------*/
+//Required for CSETBOUNDSIMM
+	inline uint32_t unsigned_I_imm() {
+		return ((static_cast<uint32_t>(instr) >> 20) & 0xFFF);
+	}
+/*spandan--------------------------------------------*/
 
 	inline int32_t S_imm() {
 		return (BIT_RANGE(instr, 31, 25) >> 20) | (BIT_RANGE(instr, 11, 7) >> 7);

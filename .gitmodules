@@ -10,6 +10,7 @@
 [submodule "vp/src/platform/hifive/vbb-protocol"]
 	path = vp/src/platform/hifive/vbb-protocol
 	url = https://github.com/agra-uni-bremen/virtual-breadboard-protocol.git
+
 [submodule "vp/src/vendor/systemc"]
 	path = vp/src/vendor/systemc
-	url = https://github.com/accellera-official/systemc.git
+	url = https://gitlab.informatik.uni-bremen.de/spandan/systemc.git

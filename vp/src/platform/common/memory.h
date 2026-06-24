@@ -9,17 +9,25 @@
 #include "load_if.h"
 
 #include <tlm_utils/simple_target_socket.h>
+#include <tlm_utils/payload_extension.h>
 #include <systemc>
+
+/*spandan--------------------*/
+#define BYTES_PER_TAG 8
+// #define TAG_BITS_PER_ROOT 128
+/*spandan--------------------*/
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {
 	tlm_utils::simple_target_socket<SimpleMemory> tsock;
 
 	uint8_t *data;
 	uint32_t size;
+	uint32_t offset; //spandan : tag offset
 	bool read_only;
 
 	SimpleMemory(sc_core::sc_module_name, uint32_t size, bool read_only = false)
 	    : data(new uint8_t[size]()), size(size), read_only(read_only) {
+		offset = size/(8*BYTES_PER_TAG); //spandan : No TAGROOT
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
 		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);
@@ -67,15 +75,65 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 		unsigned addr = trans.get_address();
 		auto *ptr = trans.get_data_ptr();
 		auto len = trans.get_data_length();
+		tlm_utils::Type datatype = tlm_utils::Type::DATA; //spandan : define a variable for datatype
+		//uint32_t root_offset; //spandan : calculate offset for TAGROOT if necessary
 
-		// std::cout << "[SIMPLE MEM] Received " << (cmd == tlm::TLM_WRITE_COMMAND ? "WRITE" : "READ") << " at address 0x" << std::hex << addr << ", value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
+		assert(addr < (size-offset)); //spandan : account for tag offset
 
-		assert(addr < size);
+		/*spandan-----------------------------------*/
+		auto* ext = trans.get_extension<tlm_utils::PayloadExtension>();
+		if (ext) {
+			datatype = ext->payload_type;
+		}
+		/*spandan-----------------------------------*/
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
-			write_data(addr, ptr, len);
+		/*spandan-----------------------------------*/
+			switch (datatype) {
+				case tlm_utils::Type::RESET:
+					load_zero(0, size); //for TESTRIG
+					break;
+				case tlm_utils::Type::TAG:
+					addr = (size - offset) + addr / ( 8 * (BYTES_PER_TAG) );
+					write_data(addr, ptr, len);
+					break;
+				case tlm_utils::Type::CAPABILITY:
+					//Not sure if this is needed---------------------------
+					if ( is_cap_not_aligned(addr) )
+						throw std::runtime_error("Alignment error at address " + std::to_string(addr));
+					//Not sure if this is needed---------------------------
+					write_data(addr, ptr, len);
+					break;
+				case tlm_utils::Type::DATA:
+					write_data(addr, ptr, len);
+					break;
+				default:
+					write_data(addr, ptr, len);
+					break;
+			}
+		/*spandan-----------------------------------*/
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
-			read_data(addr, ptr, len);
+		/*spandan-----------------------------------*/
+			switch (datatype) {
+				case tlm_utils::Type::TAG:
+					addr = (size - offset) + addr / ( 8 * (BYTES_PER_TAG) );
+					read_data(addr, ptr, len);
+					break;
+				case tlm_utils::Type::CAPABILITY:
+					//Not sure if this is needed---------------------------
+					if ( is_cap_not_aligned(addr) )
+						throw std::runtime_error("Alignment error at address " + std::to_string(addr));
+					//Not sure if this is needed---------------------------
+					read_data(addr, ptr, len);
+					break;
+				case tlm_utils::Type::DATA:
+					read_data(addr, ptr, len);
+					break;
+				default:
+					read_data(addr, ptr, len);
+					break;
+			}
+		/*spandan-----------------------------------*/
 		} else {
 			sc_assert(false && "unsupported tlm command");
 		}
@@ -94,6 +152,12 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 			dmi.allow_read_write();
 		return true;
 	}
+
+/*spandan-----------------------------*/
+	bool is_cap_not_aligned(uint64_t addr) {
+		return (addr % BYTES_PER_TAG);
+	}
+/*spandan-----------------------------*/
 };
 
 #endif  // RISCV_ISA_MEMORY_H
